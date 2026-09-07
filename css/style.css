@@ -1,0 +1,541 @@
+/* ====================================================================
+   style.css
+   Tema TUNGGAL: Dark Navy Blue profesional (bukan gelap-suram).
+   Tiada togol mod terang/gelap - satu tema sahaja supaya paparan
+   konsisten dan tidak menggelapkan medan borang semasa guru mengisi
+   maklumat.
+   Mobile-first: gaya asas untuk telefon, @media untuk skrin lebih besar.
+   ==================================================================== */
+
+:root {
+  --navy-900: #0b1930;
+  --navy-800: #10203d;
+  --navy-700: #16294d;
+  --navy-600: #1e3660;
+  --blue-accent: #4d8dff;
+  --blue-accent-light: #7db2ff;
+  --white: #ffffff;
+  --light-grey: #e6ebf3;
+  --grey-text: #a9b6cf;
+  --green: #34c281;
+  --red: #ef5a6f;
+  --orange: #f5a340;
+
+  --radius: 12px;
+  --shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
+  --font: 'Segoe UI', Roboto, -apple-system, BlinkMacSystemFont, sans-serif;
+
+  /* ---- Peta pembolehubah semantik ke palet di atas ---- */
+  --bg-page: var(--navy-900);
+  --bg-card: var(--navy-800);
+  --bg-input: var(--navy-900);
+  --border-color: var(--navy-600);
+  --text-primary: var(--light-grey);
+  --text-secondary: var(--grey-text);
+  --text-heading: var(--white);
+  --nav-bg: var(--navy-800);
+  --nav-border: var(--navy-600);
+  --nav-text: var(--grey-text);
+  --nav-text-active: var(--white);
+  --nav-active-bg: var(--navy-700);
+  --table-header-bg: var(--navy-700);
+  --overlay-bg: rgba(6, 12, 24, 0.75);
+
+  /* ---- Warna HEADER: jalur atas sistem ---- */
+  --header-bg-1: #10203d;
+  --header-bg-2: #16294d;
+  --header-text: #ffffff;
+  --header-text-dim: #b9c6de;
+  --header-accent: #7fb1ff;
+  --header-badge-bg: rgba(255, 255, 255, 0.14);
+  --header-border: rgba(255, 255, 255, 0.12);
+
+  /* ---- Highlight khusus untuk setiap tapak dropdown (select) ---- */
+  --select-bg: #15294f;
+  --select-border: #2c4d86;
+  --select-hover-bg: #1b3566;
+  --select-option-hover: #1b3566;
+
+  /* ---- Palet warna lembut untuk medan borang (Tab Kehadiran) supaya
+     tidak kelihatan flat - setiap medan warna berbeza ---- */
+  --tint-blue: #16294d;    --tint-blue-border: #2c4d86;
+  --tint-green: #123d2e;   --tint-green-border: #1f6e4f;
+  --tint-amber: #43350f;   --tint-amber-border: #7a5f1a;
+  --tint-purple: #2a2150;  --tint-purple-border: #4b3b8a;
+  --tint-teal: #123a3a;    --tint-teal-border: #1f6767;
+  --tint-rose: #3d1f2a;    --tint-rose-border: #7a3550;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  font-family: var(--font);
+  background: var(--bg-page);
+  color: var(--text-primary);
+  overflow-x: hidden;
+}
+
+h1, h2, h3, h4 { margin: 0 0 8px 0; color: var(--text-heading); }
+
+/* ---------------- HEADER ---------------- */
+.app-header {
+  background: linear-gradient(135deg, var(--header-bg-1), var(--header-bg-2));
+  padding: 12px 16px;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  box-shadow: var(--shadow);
+  position: sticky;
+  top: 0;
+  z-index: 50;
+}
+
+.header-left { display: flex; align-items: center; gap: 12px; }
+
+.school-logo { width: 46px; height: 46px; object-fit: contain; border-radius: 8px; background: var(--white); padding: 2px; }
+
+.header-text h1 { font-size: 15px; letter-spacing: 0.5px; color: var(--header-text); }
+.header-text p { margin: 0; font-size: 11px; color: var(--header-text-dim); }
+.header-text .system-name { color: var(--header-accent); font-weight: 600; margin-top: 2px; }
+
+.header-right { text-align: right; font-size: 12px; }
+.live-date { color: var(--header-text); font-weight: 600; font-size: 12px; }
+.live-time { color: var(--header-accent); font-size: 13px; font-weight: 700; }
+.academic-year-badge {
+  margin-top: 4px;
+  display: inline-block;
+  background: var(--header-badge-bg);
+  color: var(--header-accent);
+  padding: 2px 8px;
+  border-radius: 20px;
+  font-size: 11px;
+}
+
+/* ---------------- NAV TABS ---------------- */
+.tab-nav {
+  display: flex;
+  overflow-x: auto;
+  background: var(--nav-bg);
+  border-bottom: 1px solid var(--nav-border);
+  position: sticky;
+  top: 78px;
+  z-index: 40;
+  -webkit-overflow-scrolling: touch;
+}
+
+.tab-btn {
+  flex: 0 0 auto;
+  padding: 12px 16px;
+  background: none;
+  border: none;
+  color: var(--nav-text);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  border-bottom: 3px solid transparent;
+}
+
+.tab-btn.active {
+  color: var(--nav-text-active);
+  border-bottom-color: var(--blue-accent);
+  background: var(--nav-active-bg);
+}
+
+/* ---------------- MAIN / LAYOUT ---------------- */
+main { max-width: 900px; margin: 0 auto; padding: 14px; padding-bottom: 60px; }
+
+.tab-panel { display: none; }
+.tab-panel.active { display: block; animation: fadeIn 0.2s ease; }
+
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+.tab-title { font-size: 18px; margin-bottom: 12px; }
+
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius);
+  padding: 16px;
+  margin-bottom: 16px;
+  box-shadow: var(--shadow);
+}
+
+.hidden { display: none !important; }
+
+.divider { border: none; border-top: 1px solid var(--border-color); margin: 16px 0; }
+
+/* ---------------- FORMS ---------------- */
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.form-field { display: flex; flex-direction: column; gap: 4px; }
+.form-field-full { grid-column: 1 / -1; }
+
+label { font-size: 12.5px; color: var(--text-secondary); font-weight: 600; }
+
+input[type="text"], input[type="date"], input[type="time"], input[type="number"],
+input[type="password"], textarea {
+  background: var(--bg-input);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+  padding: 10px 12px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-family: var(--font);
+  width: 100%;
+}
+
+textarea { resize: vertical; min-height: 44px; }
+
+/* Medan dalam mod "lihat" (selepas eRPH/Laporan disimpan) - kelihatan
+   jelas berbeza daripada mod isi, supaya guru faham ia perlu tekan
+   "Kemaskini" dahulu sebelum boleh ubah. */
+input:disabled, textarea:disabled {
+  background: var(--table-header-bg);
+  color: var(--text-secondary);
+  cursor: not-allowed;
+  opacity: 0.85;
+}
+
+input:focus, textarea:focus {
+  outline: none;
+  border-color: var(--blue-accent);
+}
+
+/* ---- Setiap tapak dropdown (select) sengaja diberi warna highlight tersendiri
+   supaya ia jelas kelihatan sebagai medan boleh-klik, berbeza daripada input teks ---- */
+select {
+  background-color: var(--select-bg);
+  border: 1px solid var(--select-border);
+  color: var(--text-primary);
+  padding: 10px 12px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-family: var(--font);
+  width: 100%;
+  cursor: pointer;
+}
+
+select:hover:not(:disabled) {
+  background-color: var(--select-hover-bg);
+  border-color: var(--blue-accent);
+}
+
+select:focus {
+  outline: none;
+  background-color: var(--select-hover-bg);
+  border-color: var(--blue-accent);
+}
+
+select:disabled {
+  background-color: var(--bg-input);
+  border-color: var(--border-color);
+  color: var(--text-secondary);
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+/* Butang "dropdown" tersendiri (cth: Guru Pembimbing) - kelihatan macam
+   select biasa, tertutup lalai, hanya dedah senarai checkbox bila diklik. */
+.dropdown-toggle-btn {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background-color: var(--select-bg);
+  border: 1px solid var(--select-border);
+  color: var(--text-primary);
+  padding: 10px 12px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-family: var(--font);
+  cursor: pointer;
+}
+.dropdown-toggle-btn::after { content: ' \25BE'; float: right; }
+.dropdown-toggle-btn:hover:not(:disabled) { background-color: var(--select-hover-bg); border-color: var(--blue-accent); }
+.dropdown-toggle-btn:disabled { background-color: var(--bg-input); color: var(--text-secondary); cursor: not-allowed; opacity: 0.7; }
+.dropdown-toggle-btn + .student-list { margin-top: 6px; }
+
+/* Kotak senarai boleh-cari (contoh: Sivik) - setiap baris dihighlight bila dipilih/hover */
+.searchable-select { margin-top: 6px; padding: 4px; }
+.searchable-select option {
+  padding: 8px 10px;
+  border-radius: 6px;
+  color: var(--text-primary);
+}
+.searchable-select option:checked {
+  background: var(--blue-accent);
+  color: var(--white);
+}
+.searchable-select option:hover {
+  background: var(--select-option-hover);
+}
+
+.radio-row { display: flex; gap: 16px; flex-wrap: wrap; font-size: 13px; color: var(--text-primary); }
+.radio-row label { display: flex; align-items: center; gap: 6px; font-weight: 400; }
+
+.checkbox-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin: 10px 0;
+  font-size: 13px;
+}
+.checkbox-grid label { display: flex; align-items: center; gap: 6px; font-weight: 400; }
+
+/* ---------------- BUTTONS ---------------- */
+.btn {
+  border: none;
+  border-radius: 8px;
+  padding: 12px 18px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  margin-top: 6px;
+  margin-right: 6px;
+  transition: transform 0.06s ease, opacity 0.15s ease;
+}
+.btn:active { transform: scale(0.97); }
+
+.btn-primary { background: var(--blue-accent); color: var(--white); }
+.btn-primary:hover { background: var(--blue-accent-light); }
+
+.btn-secondary { background: var(--navy-600); color: var(--white); border: 1px solid var(--blue-accent); }
+
+.btn-ghost { background: transparent; color: var(--text-secondary); border: 1px solid var(--border-color); }
+
+.btn-danger { background: var(--red); color: var(--white); }
+
+.btn-sm { padding: 7px 12px; font-size: 12.5px; }
+
+.btn-block { display: block; width: 100%; text-align: center; }
+
+.btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* ---------------- TAB1: WARNA MEDAN BORANG (Kategori/Unit/Minggu/Tarikh/Masa) ----------------
+   Setiap medan diberi warna latar sendiri (bukan kelabu rata) supaya paparan
+   tidak bosan bagi guru semasa mengisi. Cara ia berfungsi: kita timpa
+   PEMBOLEHUBAH yang digunakan oleh peraturan `select`/`input` asal
+   (--select-bg/--select-border untuk dropdown, --bg-input/--border-color untuk
+   input tarikh/masa) - hanya terpakai pada elemen itu sahaja, tidak menjejaskan
+   bahagian lain sistem. */
+#khKategori, #khPdfKategori {
+  --select-bg: var(--tint-blue); --select-border: var(--tint-blue-border);
+}
+#khUnit, #khPdfUnit {
+  --select-bg: var(--tint-green); --select-border: var(--tint-green-border);
+}
+#khMinggu, #khPdfMinggu {
+  --select-bg: var(--tint-amber); --select-border: var(--tint-amber-border);
+}
+#khTarikh {
+  --bg-input: var(--tint-purple); --border-color: var(--tint-purple-border);
+}
+#khMasaMula {
+  --bg-input: var(--tint-teal); --border-color: var(--tint-teal-border);
+}
+#khMasaTamat {
+  --bg-input: var(--tint-rose); --border-color: var(--tint-rose-border);
+}
+
+/* ---------------- TAB1: YEAR TABS & STUDENT LIST ---------------- */
+.year-tabs { display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
+
+.year-btn {
+  flex: 1;
+  padding: 10px;
+  background: var(--bg-input);
+  border: 1px solid var(--border-color);
+  color: var(--text-secondary);
+  border-radius: 8px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.year-btn.active { background: var(--blue-accent); color: var(--white); border-color: var(--blue-accent); }
+
+.student-list-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+  font-size: 12.5px;
+  color: var(--text-secondary);
+}
+
+.student-list { display: flex; flex-direction: column; gap: 6px; max-height: 420px; overflow-y: auto; margin-bottom: 12px; }
+
+.student-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--bg-input);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 10px 12px;
+  cursor: pointer;
+}
+.student-row.checked { border-color: var(--green); background: rgba(52, 194, 129, 0.08); }
+
+.student-row input[type="checkbox"] { width: 20px; height: 20px; accent-color: var(--green); flex-shrink: 0; }
+.student-row .student-name { flex: 1; font-size: 13.5px; color: var(--text-primary); }
+.student-row .student-meta { font-size: 11px; color: var(--text-secondary); }
+
+.hint-text { font-size: 12px; color: var(--text-secondary); margin-top: 6px; }
+.error-text { font-size: 12.5px; color: var(--red); margin-top: 8px; }
+
+/* ---------------- WEEK CHIPS (Tab 2 & 3) ---------------- */
+.week-chip-row { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0; }
+
+.week-chip {
+  padding: 8px 14px;
+  border-radius: 20px;
+  font-size: 12.5px;
+  font-weight: 600;
+  border: 1px solid var(--border-color);
+  background: var(--bg-input);
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+.week-chip.available { border-color: var(--green); color: var(--green); }
+.week-chip.selected { background: var(--blue-accent); color: var(--white); border-color: var(--blue-accent); }
+.week-chip.disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* ---------------- IMAGE UPLOAD (Tab 3) ---------------- */
+.image-upload-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+.image-upload-box {
+  position: relative;
+  aspect-ratio: 1 / 1;
+  border: 2px dashed var(--border-color);
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  background: var(--bg-input);
+}
+.image-upload-box input[type="file"] {
+  position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; z-index: 3;
+}
+/* Susunan lapisan (z-index) EKSPLISIT - tanpa ini, gambar yang baru dimuat
+   naik boleh tersembunyi di belakang teks placeholder "+ Gambar X" kerana
+   kedua-duanya kongsi ruang flex yang sama tanpa susunan lapisan yang jelas. */
+.image-upload-box img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: 2; }
+.image-placeholder-text { position: relative; z-index: 1; font-size: 12px; color: var(--text-secondary); pointer-events: none; }
+.image-upload-box.locked { opacity: 0.6; }
+.image-upload-box.locked input[type="file"] { cursor: not-allowed; }
+
+/* ---------------- STATS & CHARTS (Tab 4) ---------------- */
+.stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 16px; }
+
+.stat-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius);
+  padding: 16px;
+  text-align: center;
+}
+.stat-card .stat-value { display: block; font-size: 24px; font-weight: 800; color: var(--text-heading); }
+.stat-card .stat-label { font-size: 11.5px; color: var(--text-secondary); }
+.stat-good .stat-value { color: var(--green); }
+.stat-bad .stat-value { color: var(--red); }
+.stat-accent .stat-value { color: var(--blue-accent-light); }
+
+.chart-grid { display: grid; grid-template-columns: 1fr; gap: 16px; }
+.chart-box {
+  background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius); padding: 12px;
+  /* Tinggi TETAP (bukan sekadar max-height) supaya Chart.js sentiasa ada
+     ruang sebenar untuk diukur sebaik sahaja kad ini nampak - tanpa ini,
+     graf bar (lebih sensitif kepada tinggi 0px berbanding carta pai) boleh
+     kelihatan kosong bila dilukis serta-merta selepas kad dinyahsembunyi. */
+  height: 320px;
+  display: flex;
+  flex-direction: column;
+}
+.chart-box canvas { flex: 1; min-height: 0; }
+
+.empty-state { text-align: center; color: var(--text-secondary); padding: 30px 10px; font-size: 13.5px; }
+
+/* ---------------- TABLES ---------------- */
+.table-scroll { overflow-x: auto; margin: 10px 0; border-radius: 8px; border: 1px solid var(--border-color); }
+
+.data-table { width: 100%; border-collapse: collapse; font-size: 12.5px; min-width: 480px; }
+.data-table th, .data-table td { padding: 8px 10px; border-bottom: 1px solid var(--border-color); text-align: left; white-space: nowrap; }
+.data-table th { background: var(--table-header-bg); color: var(--text-heading); position: sticky; top: 0; }
+.data-table td { color: var(--text-primary); }
+.data-table .action-btn { padding: 4px 8px; font-size: 11px; margin: 0 2px; }
+
+/* ---------------- ADMIN ---------------- */
+.admin-topbar {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 14px; font-size: 13px; color: var(--text-secondary);
+}
+
+/* ---------------- OVERLAYS ---------------- */
+.overlay {
+  position: fixed; inset: 0; background: var(--overlay-bg);
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  z-index: 999; gap: 14px; padding: 20px;
+}
+
+.spinner {
+  width: 42px; height: 42px; border: 4px solid var(--border-color);
+  border-top-color: var(--blue-accent); border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+#loadingText { color: var(--white); font-size: 14px; }
+
+.modal-box {
+  background: var(--bg-card); border: 1px solid var(--border-color);
+  border-radius: var(--radius); padding: 20px; max-width: 360px; width: 100%;
+  box-shadow: var(--shadow);
+}
+.modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 16px; }
+
+/* ---------------- TOAST ---------------- */
+.toast-container {
+  position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%);
+  display: flex; flex-direction: column; gap: 8px; z-index: 1000; width: calc(100% - 32px); max-width: 420px;
+}
+
+.toast {
+  background: var(--navy-700); border-left: 4px solid var(--blue-accent);
+  color: var(--white); padding: 12px 16px; border-radius: 8px; font-size: 13.5px;
+  box-shadow: var(--shadow); opacity: 0; transform: translateY(10px); transition: all 0.25s ease;
+}
+.toast-show { opacity: 1; transform: translateY(0); }
+.toast-success { border-left-color: var(--green); }
+.toast-error { border-left-color: var(--red); }
+
+/* ==================== RESPONSIVE BREAKPOINTS ==================== */
+
+/* Tablet and up */
+@media (min-width: 600px) {
+  .form-grid { grid-template-columns: 1fr 1fr; }
+  .checkbox-grid { grid-template-columns: 1fr 1fr 1fr; }
+  .image-upload-grid { grid-template-columns: repeat(4, 1fr); }
+  .stat-grid { grid-template-columns: repeat(4, 1fr); }
+}
+
+/* Desktop */
+@media (min-width: 900px) {
+  .chart-grid { grid-template-columns: 1fr 1fr; }
+  .header-text h1 { font-size: 17px; }
+}
+
+/* Small phones */
+@media (max-width: 360px) {
+  .header-text h1 { font-size: 13px; }
+  .tab-btn { padding: 10px 12px; font-size: 12px; }
+  .btn { padding: 10px 14px; font-size: 13px; }
+}

@@ -1,0 +1,585 @@
+<!doctype html>
+<html lang="ms">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+<title>Sistem Pengurusan Kokurikulum - Sekolah Kebangsaan Seri Jaya</title>
+<link rel="stylesheet" href="css/style.css">
+<!-- Chart.js untuk graf bar & pai (Tab 4) -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
+<!-- jsPDF untuk jana semua PDF di browser -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+</head>
+<body>
+
+<!-- ==================== HEADER ==================== -->
+<header class="app-header">
+  <div class="header-left">
+    <img src="https://i.postimg.cc/DZkdW8qn/Logo-SK-Seri-Jaya-Transparent.png" alt="Logo Sekolah" class="school-logo" id="schoolLogo">
+    <div class="header-text">
+      <h1 id="schoolNameHeader">SEKOLAH KEBANGSAAN SERI JAYA</h1>
+      <p id="schoolLocationHeader">KEMAMAN, TERENGGANU</p>
+      <p class="system-name" id="systemNameHeader">SISTEM PENGURUSAN KOKURIKULUM</p>
+    </div>
+  </div>
+  <div class="header-right">
+    <div class="live-date" id="liveDate">-</div>
+    <div class="live-time" id="liveTime">-</div>
+    <div class="academic-year-badge" id="academicYearBadge">Tahun: -</div>
+  </div>
+</header>
+
+<!-- ==================== NAVIGATION ==================== -->
+<nav class="tab-nav" id="tabNav">
+  <button class="tab-btn active" data-tab="kehadiran">Kehadiran</button>
+  <button class="tab-btn" data-tab="erph">eRPH Kokum</button>
+  <button class="tab-btn" data-tab="laporan">Laporan Mingguan</button>
+  <button class="tab-btn" data-tab="analisis">Analisis eKOKUM</button>
+  <button class="tab-btn" data-tab="admin">Admin</button>
+</nav>
+
+<main id="mainContent">
+
+  <!-- ==================== TAB 1: REKOD KEHADIRAN ==================== -->
+  <section class="tab-panel active" id="tab-kehadiran">
+    <h2 class="tab-title">Rekod Kehadiran Kokurikulum</h2>
+
+    <div class="card">
+      <div class="form-grid">
+        <div class="form-field">
+          <label for="khKategori">Kategori</label>
+          <select id="khKategori"></select>
+        </div>
+        <div class="form-field">
+          <label for="khUnit">Unit</label>
+          <select id="khUnit" disabled><option value="">-- Pilih kategori dahulu --</option></select>
+        </div>
+        <div class="form-field">
+          <label for="khMinggu">Minggu</label>
+          <select id="khMinggu"></select>
+        </div>
+        <div class="form-field">
+          <label for="khTarikh">Tarikh</label>
+          <input type="date" id="khTarikh">
+        </div>
+        <div class="form-field">
+          <label for="khMasaMula">Masa Mula</label>
+          <input type="time" id="khMasaMula">
+        </div>
+        <div class="form-field">
+          <label for="khMasaTamat">Masa Tamat</label>
+          <input type="time" id="khMasaTamat">
+        </div>
+      </div>
+      <button class="btn btn-primary" id="khPaparBtn">Papar Senarai Murid</button>
+      <p class="hint-text" id="khSessionHint"></p>
+    </div>
+
+    <div class="card hidden" id="khStudentCard">
+      <div class="year-tabs" id="khYearTabs">
+        <button class="year-btn active" data-tahun="4">TAHUN 4</button>
+        <button class="year-btn" data-tahun="5">TAHUN 5</button>
+        <button class="year-btn" data-tahun="6">TAHUN 6</button>
+      </div>
+      <div class="student-list-toolbar">
+        <button class="btn btn-ghost btn-sm" id="khTickAllBtn">Tandakan Semua Hadir</button>
+        <span class="student-count" id="khStudentCount"></span>
+      </div>
+      <div id="khStudentList" class="student-list"></div>
+      <button class="btn btn-primary btn-block" id="khSimpanBtn">Simpan Kehadiran</button>
+    </div>
+
+    <div class="card" id="khPdfCard">
+      <h3>Jana PDF Kehadiran</h3>
+      <div class="form-grid">
+        <div class="form-field">
+          <label for="khPdfKategori">Kategori</label>
+          <select id="khPdfKategori"></select>
+        </div>
+        <div class="form-field">
+          <label for="khPdfUnit">Unit</label>
+          <select id="khPdfUnit"><option value="">-- Pilih kategori dahulu --</option></select>
+        </div>
+        <div class="form-field">
+          <label>Skop Laporan</label>
+          <div class="radio-row">
+            <label><input type="radio" name="khPdfScope" value="semua" checked> Semua Minggu</label>
+            <label><input type="radio" name="khPdfScope" value="tertentu"> Minggu Tertentu</label>
+          </div>
+        </div>
+        <div class="form-field" id="khPdfMingguField" style="display:none;">
+          <label for="khPdfMinggu">Minggu</label>
+          <select id="khPdfMinggu"></select>
+        </div>
+      </div>
+      <button class="btn btn-secondary" id="khJanaPdfBtn">Jana PDF Kehadiran</button>
+    </div>
+  </section>
+
+  <!-- ==================== TAB 2: eRPH KOKUM ==================== -->
+  <section class="tab-panel" id="tab-erph">
+    <h2 class="tab-title">eRPH Kokurikulum</h2>
+
+    <div class="card">
+      <div class="form-grid">
+        <div class="form-field">
+          <label for="erKategori">Kategori</label>
+          <select id="erKategori"></select>
+        </div>
+        <div class="form-field">
+          <label for="erUnit">Unit</label>
+          <select id="erUnit" disabled><option value="">-- Pilih kategori dahulu --</option></select>
+        </div>
+      </div>
+      <div class="week-chip-row" id="erWeekChips"></div>
+      <p class="hint-text" id="erWeekHint">Sila pilih unit untuk melihat minggu yang tersedia.</p>
+    </div>
+
+    <div class="card hidden" id="erFormCard">
+      <div class="form-grid">
+        <div class="form-field">
+          <label>Minggu</label>
+          <input type="text" id="erMingguDisplay" disabled>
+        </div>
+        <div class="form-field">
+          <label>Bilangan Murid (Auto)</label>
+          <input type="text" id="erBilanganMurid" disabled>
+        </div>
+        <div class="form-field">
+          <label for="erTarikh">Tarikh</label>
+          <input type="date" id="erTarikh">
+        </div>
+        <div class="form-field form-field-full">
+          <label for="erTajuk">Tajuk Aktiviti</label>
+          <input type="text" id="erTajuk" placeholder="Contoh: Latihan Ikatan Asas">
+        </div>
+        <div class="form-field form-field-full">
+          <label for="erObjektif">Objektif</label>
+          <textarea id="erObjektif" rows="2"></textarea>
+        </div>
+        <div class="form-field form-field-full">
+          <label for="erAktiviti">Aktiviti</label>
+          <textarea id="erAktiviti" rows="3"></textarea>
+        </div>
+        <div class="form-field form-field-full">
+          <label for="erRumusan">Rumusan</label>
+          <textarea id="erRumusan" rows="2"></textarea>
+        </div>
+        <div class="form-field form-field-full">
+          <label for="erSivikSearch">Sivik</label>
+          <input type="text" id="erSivikSearch" placeholder="Taip untuk cari...">
+          <select id="erSivik" class="searchable-select"></select>
+        </div>
+      </div>
+      <button class="btn btn-primary btn-block" id="erSimpanBtn">Simpan eRPH</button>
+      <button class="btn btn-secondary btn-block hidden" id="erEditBtn">Kemaskini eRPH</button>
+      <button class="btn btn-danger btn-block hidden" id="erDeleteBtn">Padam eRPH</button>
+      <button class="btn btn-secondary btn-block" id="erJanaPdfBtn">Jana PDF eRPH</button>
+    </div>
+  </section>
+
+  <!-- ==================== TAB 3: LAPORAN MINGGUAN ==================== -->
+  <section class="tab-panel" id="tab-laporan">
+    <h2 class="tab-title">Laporan Aktiviti Mingguan</h2>
+
+    <div class="card">
+      <div class="form-grid">
+        <div class="form-field">
+          <label for="lpKategori">Kategori</label>
+          <select id="lpKategori"></select>
+        </div>
+        <div class="form-field">
+          <label for="lpUnit">Unit</label>
+          <select id="lpUnit" disabled><option value="">-- Pilih kategori dahulu --</option></select>
+        </div>
+      </div>
+      <div class="week-chip-row" id="lpWeekChips"></div>
+      <p class="hint-text" id="lpWeekHint">Sila pilih unit untuk melihat minggu yang tersedia.</p>
+    </div>
+
+    <div class="card hidden" id="lpFormCard">
+      <div class="form-grid">
+        <div class="form-field">
+          <label for="lpTarikhPerjumpaan">Tarikh Perjumpaan</label>
+          <input type="date" id="lpTarikhPerjumpaan">
+        </div>
+        <div class="form-field">
+          <label>Minggu</label>
+          <input type="text" id="lpMingguDisplay" disabled>
+        </div>
+        <div class="form-field form-field-full">
+          <label>Guru Pembimbing (boleh tandakan lebih daripada seorang)</label>
+          <button type="button" class="dropdown-toggle-btn" id="lpGuruPembimbingToggle">-- Pilih Guru Pembimbing --</button>
+          <div id="lpGuruPembimbingList" class="student-list hidden" style="max-height:200px;"></div>
+        </div>
+        <div class="form-field form-field-full">
+          <label>Tajuk Aktiviti (Auto daripada eRPH)</label>
+          <input type="text" id="lpTajukDisplay" disabled>
+        </div>
+        <div class="form-field form-field-full">
+          <label>Aktiviti (Auto daripada eRPH)</label>
+          <textarea id="lpAktivitiDisplay" rows="3" disabled></textarea>
+        </div>
+        <div class="form-field form-field-full">
+          <label for="lpPPikeBM">PPikeBM</label>
+          <select id="lpPPikeBM"></select>
+        </div>
+        <div class="form-field form-field-full">
+          <label for="lpRefleksi">Refleksi / Impak</label>
+          <textarea id="lpRefleksi" rows="3"></textarea>
+        </div>
+        <div class="form-field form-field-full">
+          <label>Gambar Aktiviti (4 keping)</label>
+          <div class="image-upload-grid">
+            <div class="image-upload-box" data-slot="1">
+              <input type="file" accept="image/*" capture="environment" id="lpGambar1">
+              <img id="lpPreview1" class="hidden">
+              <span class="image-placeholder-text">+ Gambar 1</span>
+            </div>
+            <div class="image-upload-box" data-slot="2">
+              <input type="file" accept="image/*" capture="environment" id="lpGambar2">
+              <img id="lpPreview2" class="hidden">
+              <span class="image-placeholder-text">+ Gambar 2</span>
+            </div>
+            <div class="image-upload-box" data-slot="3">
+              <input type="file" accept="image/*" capture="environment" id="lpGambar3">
+              <img id="lpPreview3" class="hidden">
+              <span class="image-placeholder-text">+ Gambar 3</span>
+            </div>
+            <div class="image-upload-box" data-slot="4">
+              <input type="file" accept="image/*" capture="environment" id="lpGambar4">
+              <img id="lpPreview4" class="hidden">
+              <span class="image-placeholder-text">+ Gambar 4</span>
+            </div>
+          </div>
+        </div>
+        <div class="form-field form-field-full">
+          <label for="lpDisediakanOleh">Disediakan Oleh</label>
+          <select id="lpDisediakanOleh"></select>
+        </div>
+      </div>
+      <button class="btn btn-primary btn-block" id="lpSimpanBtn">Simpan Laporan</button>
+      <button class="btn btn-secondary btn-block hidden" id="lpEditBtn">Kemaskini Laporan</button>
+      <button class="btn btn-danger btn-block hidden" id="lpDeleteBtn">Padam Laporan</button>
+      <button class="btn btn-secondary btn-block" id="lpJanaPdfBtn">Jana PDF Laporan</button>
+    </div>
+  </section>
+
+  <!-- ==================== TAB 4: ANALISIS eKOKUM ==================== -->
+  <section class="tab-panel" id="tab-analisis">
+    <h2 class="tab-title">Analisis eKOKUM</h2>
+
+    <div class="card">
+      <div class="form-grid">
+        <div class="form-field">
+          <label for="anKategori">Kategori</label>
+          <select id="anKategori"><option value="">Semua Kategori</option></select>
+        </div>
+        <div class="form-field">
+          <label for="anUnit">Unit</label>
+          <select id="anUnit"><option value="">Semua Unit</option></select>
+        </div>
+        <div class="form-field">
+          <label for="anMinggu">Minggu</label>
+          <select id="anMinggu"><option value="">Semua Minggu</option></select>
+        </div>
+        <div class="form-field">
+          <label for="anTahun">Tahun</label>
+          <select id="anTahun"><option value="">Semua Tahun</option></select>
+        </div>
+      </div>
+      <button class="btn btn-primary" id="anPaparBtn">Papar Analisis</button>
+    </div>
+
+    <div id="anResultArea">
+      <p class="empty-state" id="anEmptyState">Sila pilih penapis dan tekan "Papar Analisis".</p>
+
+      <div class="hidden" id="anStatsArea">
+        <div class="stat-grid">
+          <div class="stat-card">
+            <span class="stat-value" id="anJumlahMurid">0</span>
+            <span class="stat-label">Jumlah Murid</span>
+          </div>
+          <div class="stat-card stat-good">
+            <span class="stat-value" id="anJumlahHadir">0</span>
+            <span class="stat-label">Jumlah Hadir</span>
+          </div>
+          <div class="stat-card stat-bad">
+            <span class="stat-value" id="anJumlahTidakHadir">0</span>
+            <span class="stat-label">Jumlah Tidak Hadir</span>
+          </div>
+          <div class="stat-card stat-accent">
+            <span class="stat-value" id="anPeratusKehadiran">0%</span>
+            <span class="stat-label">Peratus Kehadiran</span>
+          </div>
+        </div>
+
+        <div class="chart-grid">
+          <div class="chart-box">
+            <h4 id="anBarChartTitle">Kehadiran Mengikut Unit</h4>
+            <canvas id="anBarChart"></canvas>
+          </div>
+          <div class="chart-box">
+            <h4>Peratus Hadir vs Tidak Hadir</h4>
+            <canvas id="anPieChart"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================== TAB 5: ADMIN ==================== -->
+  <section class="tab-panel" id="tab-admin">
+    <h2 class="tab-title">Admin</h2>
+
+    <!-- Login gate -->
+    <div class="card" id="adminLoginCard">
+      <h3>Log Masuk Admin</h3>
+      <div class="form-field">
+        <label for="adminPasswordInput">Kata Laluan</label>
+        <input type="password" id="adminPasswordInput" placeholder="Masukkan kata laluan admin">
+      </div>
+      <button class="btn btn-primary" id="adminLoginBtn">Log Masuk</button>
+      <p class="error-text hidden" id="adminLoginError"></p>
+    </div>
+
+    <!-- Admin content (ditunjukkan selepas login berjaya) -->
+    <div class="hidden" id="adminContentArea">
+
+      <div class="admin-topbar">
+        <span id="adminYearInfo">Tahun Semasa: -</span>
+        <button class="btn btn-ghost btn-sm" id="adminLogoutBtn">Log Keluar</button>
+      </div>
+
+      <!-- Tetapan Tahun Akademik -->
+      <div class="card">
+        <h3>Tetapan Tahun Akademik</h3>
+        <div class="form-grid">
+          <div class="form-field">
+            <label for="adminSetYearInput">Tahun Akademik Semasa</label>
+            <input type="number" id="adminSetYearInput" placeholder="Contoh: 2027">
+          </div>
+        </div>
+        <button class="btn btn-secondary" id="adminSetYearBtn">Kemaskini Tahun Semasa</button>
+      </div>
+
+      <!-- Daftar Murid -->
+      <div class="card">
+        <h3>Daftar Murid</h3>
+        <p class="hint-text">Tahun murid dikesan secara automatik daripada nama Kelas (cth: "4 Alpha" -> Tahun 4). ID murid dijana sistem secara automatik - anda tidak perlu fikirkannya.</p>
+        <div class="form-grid">
+          <div class="form-field"><label for="stuNama">Nama</label><input type="text" id="stuNama"></div>
+          <div class="form-field"><label for="stuKelas">Kelas</label><input type="text" id="stuKelas" placeholder="Contoh: 4 Alpha"></div>
+        </div>
+        <button class="btn btn-primary" id="stuAddBtn">Tambah Seorang Murid</button>
+
+        <hr class="divider">
+        <h4>Tambah Pukal (Paste dari Excel)</h4>
+        <p class="hint-text">Format setiap baris: NAMA [TAB] KELAS</p>
+        <textarea id="stuBulkText" rows="5" placeholder="ALI BIN AHMAD	4 Alpha"></textarea>
+        <button class="btn btn-secondary" id="stuBulkPreviewBtn">Preview</button>
+        <div id="stuBulkPreviewArea" class="hidden">
+          <div class="table-scroll"><table class="data-table" id="stuBulkPreviewTable"></table></div>
+          <button class="btn btn-primary" id="stuBulkConfirmBtn">Sahkan &amp; Simpan Semua</button>
+        </div>
+
+        <hr class="divider">
+        <h4>Senarai Murid Semasa</h4>
+        <input type="text" id="stuSearchInput" placeholder="Cari nama/kelas murid...">
+        <div class="table-scroll"><table class="data-table" id="stuListTable"></table></div>
+      </div>
+
+      <!-- Daftar Guru -->
+      <div class="card">
+        <h3>Daftar Guru</h3>
+        <p class="hint-text">ID guru dijana sistem secara automatik - anda hanya perlu isi nama.</p>
+        <div class="form-grid">
+          <div class="form-field form-field-full"><label for="tchNama">Nama</label><input type="text" id="tchNama"></div>
+        </div>
+        <button class="btn btn-primary" id="tchAddBtn">Tambah Seorang Guru</button>
+
+        <hr class="divider">
+        <h4>Tambah Pukal (Paste dari Excel)</h4>
+        <p class="hint-text">Satu nama guru setiap baris.</p>
+        <textarea id="tchBulkText" rows="4" placeholder="CIKGU AMINAH BINTI ALI"></textarea>
+        <button class="btn btn-secondary" id="tchBulkPreviewBtn">Preview</button>
+        <div id="tchBulkPreviewArea" class="hidden">
+          <div class="table-scroll"><table class="data-table" id="tchBulkPreviewTable"></table></div>
+          <button class="btn btn-primary" id="tchBulkConfirmBtn">Sahkan &amp; Simpan Semua</button>
+        </div>
+
+        <hr class="divider">
+        <h4>Senarai Guru Semasa</h4>
+        <div class="table-scroll"><table class="data-table" id="tchListTable"></table></div>
+      </div>
+
+      <!-- Daftar Unit -->
+      <div class="card">
+        <h3>Daftar Unit</h3>
+        <p class="hint-text">Pilih kategori dan taip nama unit/kelab/sukan sahaja - ID unit dijana sistem secara automatik.</p>
+        <div class="form-grid">
+          <div class="form-field"><label for="unitKategori">Kategori</label><select id="unitKategori"></select></div>
+          <div class="form-field"><label for="unitNama">Nama Unit / Kelab / Sukan</label><input type="text" id="unitNama" placeholder="Contoh: Pengakap"></div>
+        </div>
+        <button class="btn btn-primary" id="unitAddBtn">Tambah Unit</button>
+
+        <hr class="divider">
+        <h4>Senarai Unit Semasa</h4>
+        <div class="table-scroll"><table class="data-table" id="unitListTable"></table></div>
+      </div>
+
+      <!-- Penempatan Murid -->
+      <div class="card">
+        <h3>Penempatan Murid ke Unit</h3>
+        <p class="hint-text">Tandakan (tick) nama murid yang mahu didaftarkan ke unit ini. Murid yang sudah menjadi ahli akan kelihatan pra-ditanda - nyahtanda untuk keluarkan mereka daripada unit.</p>
+        <div class="form-field">
+          <label for="placeUnitSelect">Pilih Unit</label>
+          <select id="placeUnitSelect"></select>
+        </div>
+        <div class="form-grid">
+          <div class="form-field">
+            <label for="placeSearchInput">Cari Nama / Kelas</label>
+            <input type="text" id="placeSearchInput" placeholder="Taip untuk cari...">
+          </div>
+          <div class="form-field">
+            <label for="placeTahunFilter">Tapis Tahun</label>
+            <select id="placeTahunFilter">
+              <option value="">Semua Tahun</option>
+              <option value="4">Tahun 4</option>
+              <option value="5">Tahun 5</option>
+              <option value="6">Tahun 6</option>
+            </select>
+          </div>
+        </div>
+        <div class="student-list-toolbar">
+          <button class="btn btn-ghost btn-sm" id="placeTickAllBtn">Tandakan Semua (Terpapar)</button>
+          <span class="student-count" id="placeStudentCount"></span>
+        </div>
+        <div id="placeStudentList" class="student-list">
+          <p class="hint-text">Pilih unit di atas untuk papar senarai murid.</p>
+        </div>
+        <button class="btn btn-primary btn-block" id="placeSubmitBtn">Simpan Penempatan Unit Ini</button>
+        <div id="placeResultArea"></div>
+      </div>
+
+      <!-- Penempatan Guru ke Unit (Guru Penasihat) -->
+      <div class="card">
+        <h3>Penempatan Guru ke Unit (Guru Penasihat)</h3>
+        <p class="hint-text">Tandakan guru yang menjadi Guru Penasihat/Pembimbing bagi unit ini. Senarai ini akan digunakan untuk hadkan pilihan "Guru Pembimbing" di Tab Laporan Mingguan.</p>
+        <div class="form-field">
+          <label for="placeTeacherUnitSelect">Pilih Unit</label>
+          <select id="placeTeacherUnitSelect"></select>
+        </div>
+        <div class="form-field">
+          <label for="placeTeacherSearchInput">Cari Nama Guru</label>
+          <input type="text" id="placeTeacherSearchInput" placeholder="Taip untuk cari...">
+        </div>
+        <div class="student-list-toolbar">
+          <button class="btn btn-ghost btn-sm" id="placeTeacherTickAllBtn">Tandakan Semua (Terpapar)</button>
+          <span class="student-count" id="placeTeacherCount"></span>
+        </div>
+        <div id="placeTeacherList" class="student-list">
+          <p class="hint-text">Pilih unit di atas untuk papar senarai guru.</p>
+        </div>
+        <button class="btn btn-primary btn-block" id="placeTeacherSubmitBtn">Simpan Guru Penasihat Unit Ini</button>
+        <div id="placeTeacherResultArea"></div>
+      </div>
+
+      <!-- Migrasi Data -->
+      <div class="card">
+        <h3>Migrasi Data Tahun Sebelumnya</h3>
+        <div class="form-grid">
+          <div class="form-field">
+            <label for="migTahunLama">Tahun Lama</label>
+            <input type="number" id="migTahunLama" placeholder="Contoh: 2026">
+          </div>
+          <div class="form-field form-field-full">
+            <label for="migSheetUrl">Google Sheet Lama (URL)</label>
+            <input type="text" id="migSheetUrl" placeholder="https://docs.google.com/spreadsheets/d/....">
+          </div>
+        </div>
+
+        <p class="hint-text">Pilih data yang mahu disemak:</p>
+        <div class="checkbox-grid" id="migCategoryChecks">
+          <label><input type="checkbox" value="Students" checked> Murid</label>
+          <label><input type="checkbox" value="Teachers" checked> Guru</label>
+          <label><input type="checkbox" value="Units" checked> Unit</label>
+          <label><input type="checkbox" value="StudentUnits" checked> Penempatan Murid</label>
+          <label><input type="checkbox" value="TeacherUnits" checked> Penempatan Guru</label>
+          <label><input type="checkbox" value="Sivik" checked> Sivik</label>
+          <label><input type="checkbox" value="PPikeBM" checked> PPikeBM</label>
+          <label><input type="checkbox" value="AttendanceSessions" checked> Rekod Kehadiran</label>
+          <label><input type="checkbox" value="ERPH" checked> eRPH</label>
+          <label><input type="checkbox" value="WeeklyReports" checked> Laporan Mingguan</label>
+        </div>
+
+        <button class="btn btn-secondary" id="migCheckBtn">Semak &amp; Baca Data</button>
+
+        <div class="hidden" id="migPreviewArea">
+          <hr class="divider">
+          <h4>Preview Data</h4>
+          <div id="migPreviewContent"></div>
+          <button class="btn btn-primary" id="migConfirmBtn">Sahkan Import</button>
+        </div>
+
+        <div class="hidden" id="migReportArea">
+          <hr class="divider">
+          <h4>Laporan Migrasi</h4>
+          <div id="migReportContent"></div>
+        </div>
+      </div>
+
+      <!-- Urus Sivik & PPikeBM -->
+      <div class="card">
+        <h3>Master Data Sivik &amp; PPikeBM</h3>
+        <p class="hint-text">Senarai ini digunakan dalam Tab eRPH dan Laporan Mingguan.</p>
+        <div class="form-grid">
+          <div class="form-field">
+            <label for="masterSivikText">Senarai Sivik (satu setiap baris)</label>
+            <textarea id="masterSivikText" rows="6"></textarea>
+          </div>
+          <div class="form-field">
+            <label for="masterPPikeBMText">Senarai PPikeBM (satu setiap baris)</label>
+            <textarea id="masterPPikeBMText" rows="6"></textarea>
+          </div>
+        </div>
+        <button class="btn btn-secondary" id="masterSaveBtn">Simpan Master Data</button>
+      </div>
+
+    </div>
+  </section>
+
+</main>
+
+<!-- ==================== OVERLAYS ==================== -->
+<div id="loadingOverlay" class="overlay hidden">
+  <div class="spinner"></div>
+  <p id="loadingText">Memuatkan...</p>
+</div>
+
+<div id="confirmModal" class="overlay hidden">
+  <div class="modal-box">
+    <h3 id="confirmModalTitle">Sahkan Tindakan</h3>
+    <p id="confirmModalMessage">Adakah anda pasti?</p>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" id="confirmModalNo">Batal</button>
+      <button class="btn btn-danger" id="confirmModalYes">Sahkan</button>
+    </div>
+  </div>
+</div>
+
+<div id="toastContainer" class="toast-container"></div>
+
+<!-- ==================== SCRIPTS ==================== -->
+<script src="js/config.js"></script>
+<script src="js/utils.js"></script>
+<script src="js/api.js"></script>
+<script src="js/pdf-helper.js"></script>
+<script src="js/tab-kehadiran.js"></script>
+<script src="js/tab-erph.js"></script>
+<script src="js/tab-laporan.js"></script>
+<script src="js/tab-analisis.js"></script>
+<script src="js/tab-admin.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
