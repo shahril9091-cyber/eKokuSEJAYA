@@ -537,7 +537,7 @@ select:disabled {
 
 /* Desktop */
 @media (min-width: 900px) {
-  .chart-grid { grid-template-columns: 1fr 1fr; }
+  .chart-grid { max-width: 560px; }
 }
 
 /* Small phones */
