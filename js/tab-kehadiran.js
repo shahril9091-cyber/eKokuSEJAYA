@@ -21,12 +21,14 @@ const TabKehadiran = {
     Utils.el('khTarikh').value = Utils.todayIso();
 
     Utils.el('khKategori').addEventListener('change', (e) => {
+      this.unlockSessionFields(); // tukar kategori = sesi berlainan, buka semula minggu/tarikh/masa
       Shared.populateUnitSelect(Utils.el('khUnit'), e.target.value);
       Shared.populateWeekSelect(Utils.el('khMinggu'), false);
     });
     Shared.populateUnitSelect(Utils.el('khUnit'), Utils.el('khKategori').value);
 
     Utils.el('khUnit').addEventListener('change', (e) => {
+      this.unlockSessionFields(); // tukar unit = sesi berlainan, buka semula minggu/tarikh/masa
       this.refreshMingguIndicators('khMinggu', e.target.value);
     });
 
@@ -71,26 +73,28 @@ const TabKehadiran = {
     Utils.el('khJanaPdfBtn').addEventListener('click', () => this.generatePdf());
   },
 
-  // Selepas senarai murid untuk sesi (kategori/unit/minggu/tarikh/masa) dipaparkan
-  // atau disimpan, kunci medan persediaan sesi supaya guru tidak tertekan tukar
-  // unit/minggu secara tidak sengaja sedangkan sedang menanda kehadiran. Senarai
-  // murid dan butang "Simpan Kehadiran" KEKAL aktif - hanya medan persediaan dikunci.
+  // Selepas senarai murid untuk sesi (minggu/tarikh/masa) dipaparkan atau
+  // disimpan, kunci HANYA medan Minggu/Tarikh/Masa Mula/Masa Tamat, supaya
+  // guru tidak tertekan tukar butiran sesi yang sudah disimpan secara tidak
+  // sengaja sedangkan sedang menanda kehadiran. Kategori dan Unit KEKAL
+  // aktif supaya guru boleh terus tukar ke unit lain untuk hantar kehadiran
+  // unit tersebut (setiap unit ada sesi/minggu tersendiri, tidak berkongsi
+  // status freeze). Senarai murid dan "Simpan Kehadiran" turut KEKAL aktif.
   lockSessionFields() {
-    ['khKategori', 'khUnit', 'khMinggu', 'khTarikh', 'khMasaMula', 'khMasaTamat'].forEach(id => {
+    ['khMinggu', 'khTarikh', 'khMasaMula', 'khMasaTamat'].forEach(id => {
       Utils.el(id).disabled = true;
     });
     Utils.el('khPaparBtn').classList.add('hidden');
     Utils.el('khEditSesiBtn').classList.remove('hidden');
   },
 
-  // Guru klik "Kemaskini Maklumat Sesi" untuk buka semula medan persediaan
-  // (cth: hendak tukar ke unit/minggu lain). Senarai murid disembunyikan
-  // semula sehingga guru klik "Papar Senarai Murid" untuk sesi baharu itu.
+  // Buka semula Minggu/Tarikh/Masa Mula/Masa Tamat - dipanggil sama ada
+  // guru klik "Kemaskini Maklumat Sesi" secara manual, ATAU secara automatik
+  // apabila Kategori/Unit ditukar (kerana itu bermakna sesi/unit berlainan).
   unlockSessionFields() {
-    ['khKategori', 'khMinggu', 'khTarikh', 'khMasaMula', 'khMasaTamat'].forEach(id => {
+    ['khMinggu', 'khTarikh', 'khMasaMula', 'khMasaTamat'].forEach(id => {
       Utils.el(id).disabled = false;
     });
-    Shared.populateUnitSelect(Utils.el('khUnit'), Utils.el('khKategori').value); // kekalkan logik enable/disable sedia ada mengikut kategori
     Utils.el('khPaparBtn').classList.remove('hidden');
     Utils.el('khEditSesiBtn').classList.add('hidden');
     Utils.el('khStudentCard').classList.add('hidden');
