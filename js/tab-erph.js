@@ -121,7 +121,7 @@ const TabErph = {
       Utils.el('erBilanganMurid').value = data.bilanganMurid;
 
       const erph = data.erph || {};
-      Utils.el('erTarikh').value = erph.tarikh || Utils.todayIso();
+      Utils.el('erTarikh').value = Utils.toDateInputValue(erph.tarikh) || Utils.todayIso();
       Utils.el('erTajuk').value = erph.tajukAktiviti || '';
       Utils.el('erObjektif').value = erph.objektif || '';
       Utils.el('erAktiviti').value = erph.aktiviti || '';

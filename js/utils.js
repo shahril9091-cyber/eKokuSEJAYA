@@ -33,6 +33,48 @@ const Utils = {
     return `${map.year}-${map.month}-${map.day}`;
   },
 
+  // ---- Normalisasi nilai Tarikh/Masa daripada backend kepada format yang
+  // input type="date"/"time" WAJIB terima ("YYYY-MM-DD" / "HH:MM").
+  // Kadangkala Google Sheets tersilap tukar sel yang sepatutnya teks biasa
+  // (cth "2026-09-06" atau "08:00") kepada nilai tarikh/masa SEBENAR - bila
+  // ini berlaku, backend memulangkan rentetan ISO penuh (cth
+  // "2026-09-05T16:00:00.000Z" atau "1899-12-30T07:39:35.000Z" bagi masa).
+  // Assign terus rentetan sebegitu kepada .value input HTML5 GAGAL SENYAP -
+  // pelayar tolak format tidak sah dan medan jadi KOSONG tanpa sebarang
+  // ralat, seolah-olah data hilang walaupun ia sebenarnya masih ada di
+  // pelayan. Fungsi ini kesan bentuk rentetan tersebut dan pulihkan nilai
+  // yang boleh dipaparkan, mengambil kira timezone Malaysia supaya tarikh
+  // tidak tersasar sehari akibat penukaran UTC di dalam rentetan ISO itu.
+  toDateInputValue(raw) {
+    if (!raw) return '';
+    const str = String(raw);
+    const clean = str.match(/^(\d{4}-\d{2}-\d{2})$/);
+    if (clean) return clean[1];
+    const d = new Date(str);
+    if (isNaN(d.getTime())) return '';
+    const parts = new Intl.DateTimeFormat('en-CA', {
+      timeZone: CONFIG.TIMEZONE, year: 'numeric', month: '2-digit', day: '2-digit'
+    }).formatToParts(d);
+    const map = {};
+    parts.forEach(p => map[p.type] = p.value);
+    return `${map.year}-${map.month}-${map.day}`;
+  },
+
+  toTimeInputValue(raw) {
+    if (!raw) return '';
+    const str = String(raw);
+    const clean = str.match(/^(\d{2}:\d{2})(:\d{2})?$/);
+    if (clean) return clean[1];
+    const d = new Date(str);
+    if (isNaN(d.getTime())) return '';
+    const parts = new Intl.DateTimeFormat('en-GB', {
+      timeZone: CONFIG.TIMEZONE, hour: '2-digit', minute: '2-digit', hour12: false
+    }).formatToParts(d);
+    const map = {};
+    parts.forEach(p => map[p.type] = p.value);
+    return `${map.hour}:${map.minute}`;
+  },
+
   formatDateDisplay(isoDate) {
     if (!isoDate) return '-';
 

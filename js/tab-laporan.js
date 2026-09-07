@@ -252,7 +252,7 @@ const TabLaporan = {
       Utils.el('lpAktivitiDisplay').value = data.aktiviti || '';
 
       const report = data.report || {};
-      Utils.el('lpTarikhPerjumpaan').value = report.tarikhPerjumpaan || Utils.todayIso();
+      Utils.el('lpTarikhPerjumpaan').value = Utils.toDateInputValue(report.tarikhPerjumpaan) || Utils.todayIso();
 
       // guruPembimbing disimpan sebagai satu string ID dipisah koma
       // (cth: "TCH_1,TCH_2") supaya boleh sokong >1 guru tanpa jadual baharu.

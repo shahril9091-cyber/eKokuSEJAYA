@@ -216,9 +216,9 @@ const TabKehadiran = {
       this.currentSessionId = data.session ? data.session.sessionId : null;
 
       if (data.session) {
-        Utils.el('khTarikh').value = data.session.tarikh || Utils.el('khTarikh').value;
-        Utils.el('khMasaMula').value = data.session.masaMula || Utils.el('khMasaMula').value;
-        Utils.el('khMasaTamat').value = data.session.masaTamat || Utils.el('khMasaTamat').value;
+        Utils.el('khTarikh').value = Utils.toDateInputValue(data.session.tarikh) || Utils.el('khTarikh').value;
+        Utils.el('khMasaMula').value = Utils.toTimeInputValue(data.session.masaMula) || Utils.el('khMasaMula').value;
+        Utils.el('khMasaTamat').value = Utils.toTimeInputValue(data.session.masaTamat) || Utils.el('khMasaTamat').value;
         Utils.el('khSessionHint').textContent = 'Rekod sedia ada untuk minggu ini dimuatkan - anda sedang mengemaskini.';
         Utils.el('khSimpanBtn').textContent = 'Kemaskini Kehadiran';
       } else {
