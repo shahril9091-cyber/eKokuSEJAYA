@@ -71,22 +71,24 @@ const TabKehadiran = {
   },
 
   // Selepas senarai murid untuk sesi (minggu/tarikh/masa) dipaparkan atau
-  // disimpan, kunci HANYA medan Minggu/Tarikh/Masa Mula/Masa Tamat, supaya
-  // guru tidak tertekan tukar butiran sesi yang sudah disimpan secara tidak
+  // disimpan, kunci HANYA medan Tarikh/Masa Mula/Masa Tamat, supaya guru
+  // tidak tertekan tukar butiran sesi yang sudah disimpan secara tidak
   // sengaja sedangkan sedang menanda kehadiran. Kategori dan Unit KEKAL
   // aktif supaya guru boleh terus tukar ke unit lain untuk hantar kehadiran
   // unit tersebut (setiap unit ada sesi/minggu tersendiri, tidak berkongsi
   // status freeze). Senarai murid dan "Simpan Kehadiran" turut KEKAL aktif.
   //
-  // NOTA: khMinggu (<select>) dikunci guna "disabled" (selamat - teks
-  // pilihan tetap dipaparkan penuh). khTarikh/khMasaMula/khMasaTamat pula
-  // guna "readonly" + kelas .field-locked-visible (BUKAN "disabled") -
-  // input type="date"/"time" yang "disabled" dipaparkan pudar/kosong oleh
-  // sesetengah pelayar mudah alih (isu native, CSS tidak dapat kawal
-  // bahagian dalaman widget itu). "readonly" mengekalkan paparan nilai
-  // penuh sambil pointer-events:none menghalang sebarang sentuhan/tukar.
+  // NOTA: khMinggu SENGAJA TIDAK dikunci (per keputusan ujian sistem) -
+  // guru boleh tukar dropdown Minggu bila-bila masa walaupun sesi semasa
+  // sudah freeze; klik "Kemaskini Maklumat Sesi" tetap diperlukan untuk
+  // buka-kunci Tarikh/Masa dan memuatkan semula sesi bagi minggu baharu itu.
+  // khTarikh/khMasaMula/khMasaTamat guna "readonly" + kelas
+  // .field-locked-visible (BUKAN "disabled") - input type="date"/"time"
+  // yang "disabled" dipaparkan pudar/kosong oleh sesetengah pelayar mudah
+  // alih (isu native, CSS tidak dapat kawal bahagian dalaman widget itu).
+  // "readonly" mengekalkan paparan nilai penuh sambil pointer-events:none
+  // menghalang sebarang sentuhan/tukar.
   setSessionFieldsInteractive(interactive) {
-    Utils.el('khMinggu').disabled = !interactive;
     ['khTarikh', 'khMasaMula', 'khMasaTamat'].forEach(id => {
       const el = Utils.el(id);
       el.readOnly = !interactive;
