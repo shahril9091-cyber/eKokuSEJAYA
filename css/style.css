@@ -209,6 +209,28 @@ input:disabled, textarea:disabled {
   opacity: 0.85;
 }
 
+/* Tab1 (Kehadiran): kunci Tarikh/Masa Mula/Masa Tamat selepas rekod
+   disimpan TANPA guna atribut "disabled" asli. Sebab: pelayar (terutama
+   Chrome Android) memaparkan input type="date"/"time" YANG DIKUNCI DENGAN
+   "disabled" dengan nilai dalaman yang pudar/kosong secara native - CSS
+   color/opacity di atas TIDAK dapat mengawal bahagian dalaman widget
+   tarikh/masa tersebut (ia dikawal sistem, bukan CSS). Guna "readonly" +
+   pointer-events:none sebaliknya - nilai kekal dipaparkan PENUH seperti
+   medan biasa, tetapi guru tidak boleh sentuh/tukar. */
+.field-locked-visible {
+  pointer-events: none;
+  background: var(--table-header-bg);
+  border-color: var(--border-color);
+  color: var(--text-secondary);
+}
+
+.attendance-count-summary {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--blue-accent);
+  margin: 8px 0 0;
+}
+
 input:focus, textarea:focus {
   outline: none;
   border-color: var(--blue-accent);

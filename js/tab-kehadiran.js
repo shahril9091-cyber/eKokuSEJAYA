@@ -77,10 +77,26 @@ const TabKehadiran = {
   // aktif supaya guru boleh terus tukar ke unit lain untuk hantar kehadiran
   // unit tersebut (setiap unit ada sesi/minggu tersendiri, tidak berkongsi
   // status freeze). Senarai murid dan "Simpan Kehadiran" turut KEKAL aktif.
-  lockSessionFields() {
-    ['khMinggu', 'khTarikh', 'khMasaMula', 'khMasaTamat'].forEach(id => {
-      Utils.el(id).disabled = true;
+  //
+  // NOTA: khMinggu (<select>) dikunci guna "disabled" (selamat - teks
+  // pilihan tetap dipaparkan penuh). khTarikh/khMasaMula/khMasaTamat pula
+  // guna "readonly" + kelas .field-locked-visible (BUKAN "disabled") -
+  // input type="date"/"time" yang "disabled" dipaparkan pudar/kosong oleh
+  // sesetengah pelayar mudah alih (isu native, CSS tidak dapat kawal
+  // bahagian dalaman widget itu). "readonly" mengekalkan paparan nilai
+  // penuh sambil pointer-events:none menghalang sebarang sentuhan/tukar.
+  setSessionFieldsInteractive(interactive) {
+    Utils.el('khMinggu').disabled = !interactive;
+    ['khTarikh', 'khMasaMula', 'khMasaTamat'].forEach(id => {
+      const el = Utils.el(id);
+      el.readOnly = !interactive;
+      if (interactive) el.removeAttribute('tabindex'); else el.tabIndex = -1;
+      el.classList.toggle('field-locked-visible', !interactive);
     });
+  },
+
+  lockSessionFields() {
+    this.setSessionFieldsInteractive(false);
     Utils.el('khPaparBtn').classList.add('hidden');
     Utils.el('khEditSesiBtn').classList.remove('hidden');
   },
@@ -89,9 +105,7 @@ const TabKehadiran = {
   // guru klik "Kemaskini Maklumat Sesi" secara manual, ATAU secara automatik
   // apabila Kategori/Unit ditukar (kerana itu bermakna sesi/unit berlainan).
   unlockSessionFields() {
-    ['khMinggu', 'khTarikh', 'khMasaMula', 'khMasaTamat'].forEach(id => {
-      Utils.el(id).disabled = false;
-    });
+    this.setSessionFieldsInteractive(true);
     Utils.el('khPaparBtn').classList.remove('hidden');
     Utils.el('khEditSesiBtn').classList.add('hidden');
     Utils.el('khStudentCard').classList.add('hidden');
@@ -100,6 +114,7 @@ const TabKehadiran = {
     this.currentSessionId = null;
     this.allStudents = [];
     this.attendanceMap = {};
+    this.updateAttendanceCountSummary();
   },
 
   // Tukar Unit = konteks sesi berlainan sepenuhnya. SEBELUM ini, fungsi ini
@@ -119,13 +134,15 @@ const TabKehadiran = {
     const existing = weeks.find(w => String(w.minggu) === String(selectedMinggu));
 
     if (existing && existing.available) {
-      // Pastikan medan aktif dahulu supaya loadStudentsForEntry() boleh
-      // baca/isi nilainya; nilai placeholder Masa (jika kosong) akan
-      // ditimpa serta-merta oleh rekod sedia ada yang dimuatkan.
-      ['khMinggu', 'khTarikh', 'khMasaMula', 'khMasaTamat'].forEach(id => { Utils.el(id).disabled = false; });
-      if (!Utils.el('khMasaMula').value) Utils.el('khMasaMula').value = '00:00';
-      if (!Utils.el('khMasaTamat').value) Utils.el('khMasaTamat').value = '00:00';
-      await this.loadStudentsForEntry();
+      // Pastikan medan aktif dahulu supaya nilai sedia ada boleh ditulis
+      // masuk. TIDAK panggil loadStudentsForEntry() di sini sebab fungsi
+      // itu mewajibkan Tarikh/Masa diisi guru dahulu (perlu untuk cipta
+      // sesi BAHARU) - syarat itu tidak relevan/tidak patut diguna pakai
+      // di sini kerana rekod SUDAH wujud; nilai sebenar datang terus
+      // daripada rekod tersimpan itu sendiri. Guna fetchAndRenderSession()
+      // terus (tiada validasi Tarikh/Masa).
+      this.setSessionFieldsInteractive(true);
+      await this.fetchAndRenderSession(unitId, selectedMinggu);
     } else {
       this.unlockSessionFields();
     }
@@ -163,6 +180,9 @@ const TabKehadiran = {
     }
   },
 
+  // Dipanggil apabila guru klik butang "Papar Senarai Murid" secara manual.
+  // Tarikh/Masa WAJIB diisi di sini kerana kes ini mungkin mencipta sesi
+  // BAHARU (belum wujud) - nilai itu diperlukan untuk sesi baharu tersebut.
   async loadStudentsForEntry() {
     const unitId = Utils.el('khUnit').value;
     const minggu = Utils.el('khMinggu').value;
@@ -174,6 +194,17 @@ const TabKehadiran = {
     if (!minggu) return Utils.toast('Sila pilih Minggu.', 'error');
     if (!tarikh || !masaMula || !masaTamat) return Utils.toast('Sila lengkapkan Tarikh, Masa Mula dan Masa Tamat.', 'error');
 
+    await this.fetchAndRenderSession(unitId, minggu);
+  },
+
+  // Teras: ambil & papar data sesi (murid + rekod kehadiran jika ada) bagi
+  // unit+minggu tertentu, kemudian kunci medan HANYA jika rekod itu SUDAH
+  // wujud. SENGAJA tiada validasi Tarikh/Masa di sini (beza dengan
+  // loadStudentsForEntry di atas) supaya handleUnitChange() boleh
+  // panggilnya terus untuk muat-semula-automatik sesi sedia ada tanpa
+  // guru perlu isi Tarikh/Masa dahulu - nilai sebenar datang terus
+  // daripada rekod tersimpan yang dimuatkan.
+  async fetchAndRenderSession(unitId, minggu) {
     try {
       Utils.showLoading('Memuatkan senarai murid...');
       const data = await Api.call('getAttendanceEntryData', {
@@ -185,9 +216,9 @@ const TabKehadiran = {
       this.currentSessionId = data.session ? data.session.sessionId : null;
 
       if (data.session) {
-        Utils.el('khTarikh').value = data.session.tarikh || tarikh;
-        Utils.el('khMasaMula').value = data.session.masaMula || masaMula;
-        Utils.el('khMasaTamat').value = data.session.masaTamat || masaTamat;
+        Utils.el('khTarikh').value = data.session.tarikh || Utils.el('khTarikh').value;
+        Utils.el('khMasaMula').value = data.session.masaMula || Utils.el('khMasaMula').value;
+        Utils.el('khMasaTamat').value = data.session.masaTamat || Utils.el('khMasaTamat').value;
         Utils.el('khSessionHint').textContent = 'Rekod sedia ada untuk minggu ini dimuatkan - anda sedang mengemaskini.';
         Utils.el('khSimpanBtn').textContent = 'Kemaskini Kehadiran';
       } else {
@@ -213,8 +244,6 @@ const TabKehadiran = {
       // (guru membuka semula minggu yang sedia ada). Jika ini minggu BAHARU
       // (belum pernah diisi/disimpan), medan KEKAL boleh edit sehingga guru
       // benar-benar klik Simpan - baru dikunci (lihat saveAttendance()).
-      // Sebelum ini fungsi dikunci serta-merta selepas klik "Papar Senarai
-      // Murid" walaupun minggu itu masih kosong - punca bug dilaporkan guru.
       if (alreadyFilled) this.lockSessionFields();
 
     } catch (err) {
@@ -224,7 +253,29 @@ const TabKehadiran = {
     }
   },
 
+  // Papar bilangan murid HADIR (bukan jumlah didaftarkan) mengikut tahun,
+  // cth "TAHUN 4 = 3 ORANG | TAHUN 5 = 5 ORANG | TAHUN 6 = 10 ORANG" - live,
+  // dikemaskini setiap kali guru tanda/nyahtanda kehadiran seorang murid,
+  // supaya guru boleh terus semak jumlah tanpa kira secara manual.
+  updateAttendanceCountSummary() {
+    const el = Utils.el('khAttendanceCountSummary');
+    if (this.allStudents.length === 0) {
+      el.classList.add('hidden');
+      el.textContent = '';
+      return;
+    }
+    const counts = { 4: 0, 5: 0, 6: 0 };
+    this.allStudents.forEach(s => {
+      if (this.attendanceMap[s.studentId] && Object.prototype.hasOwnProperty.call(counts, Number(s.tahun))) {
+        counts[Number(s.tahun)]++;
+      }
+    });
+    el.textContent = `TAHUN 4 = ${counts[4]} ORANG | TAHUN 5 = ${counts[5]} ORANG | TAHUN 6 = ${counts[6]} ORANG`;
+    el.classList.remove('hidden');
+  },
+
   renderStudentList() {
+    this.updateAttendanceCountSummary();
     const container = Utils.el('khStudentList');
     const list = this.allStudents.filter(s => Number(s.tahun) === this.activeTahun);
     Utils.el('khStudentCount').textContent = `${list.length} murid`;
@@ -251,6 +302,7 @@ const TabKehadiran = {
         const studentId = row.dataset.studentId;
         this.attendanceMap[studentId] = checkbox.checked;
         row.classList.toggle('checked', checkbox.checked);
+        this.updateAttendanceCountSummary();
       });
     });
   },
