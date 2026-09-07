@@ -106,7 +106,14 @@ h1, h2, h3, h4 { margin: 0 0 8px 0; color: var(--text-heading); }
 /* ---------------- NAV TABS (dipusatkan, gaya pil) ---------------- */
 .tab-nav {
   display: flex;
-  justify-content: center;
+  /* PENTING: justify-content:flex-start (bukan center) di sini secara
+     lalai. Menggabungkan justify-content:center dengan overflow-x:auto
+     pada skrin sempit (5 tab tidak cukup ruang) menyebabkan pelayar
+     "sembunyikan"/putuskan akses kepada tab PERTAMA (Kehadiran) kerana
+     kedudukan tatal 0 tidak lagi bermula tepat di hujung kiri kandungan.
+     Pemusatan hanya diaktifkan semula (lihat @media 600px ke bawah)
+     apabila skrin cukup lebar untuk kelima-lima tab muat tanpa tatal. */
+  justify-content: flex-start;
   overflow-x: auto;
   background: var(--nav-bg);
   border: 1px solid var(--nav-border);
@@ -523,6 +530,9 @@ select:disabled {
   .checkbox-grid { grid-template-columns: 1fr 1fr 1fr; }
   .image-upload-grid { grid-template-columns: repeat(4, 1fr); }
   .stat-grid { grid-template-columns: repeat(4, 1fr); }
+  /* Cukup lebar untuk kelima-lima tab muat tanpa tatal - selamat untuk
+     pusatkan semula (lihat nota keselamatan dalam .tab-nav di atas). */
+  .tab-nav { justify-content: center; }
 }
 
 /* Desktop */
