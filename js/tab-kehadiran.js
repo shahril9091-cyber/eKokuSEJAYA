@@ -285,7 +285,7 @@ const TabKehadiran = {
       const drawSessionHeader = (session, isContinuation) => {
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(10);
-        const label = `MINGGU ${session.minggu}  |  Tarikh: ${Utils.formatDateDisplay(session.tarikh)}  |  Masa: ${session.masaMula} - ${session.masaTamat}` + (isContinuation ? '  (samb.)' : '');
+        const label = `MINGGU ${session.minggu}  |  Tarikh: ${Utils.formatDateDisplay(session.tarikh)}` + (isContinuation ? '  (samb.)' : '');
         doc.text(label, 14, y);
         y += 7;
 
