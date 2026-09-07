@@ -27,10 +27,7 @@ const TabKehadiran = {
     });
     Shared.populateUnitSelect(Utils.el('khUnit'), Utils.el('khKategori').value);
 
-    Utils.el('khUnit').addEventListener('change', (e) => {
-      this.unlockSessionFields(); // tukar unit = sesi berlainan, buka semula minggu/tarikh/masa
-      this.refreshMingguIndicators('khMinggu', e.target.value);
-    });
+    Utils.el('khUnit').addEventListener('change', (e) => this.handleUnitChange(e.target.value));
 
     Utils.el('khPdfKategori').addEventListener('change', (e) => {
       Shared.populateUnitSelect(Utils.el('khPdfUnit'), e.target.value);
@@ -105,13 +102,42 @@ const TabKehadiran = {
     this.attendanceMap = {};
   },
 
+  // Tukar Unit = konteks sesi berlainan sepenuhnya. SEBELUM ini, fungsi ini
+  // sentiasa buka-kunci (unlock) medan Minggu/Tarikh/Masa tanpa syarat -
+  // ini punca bug: jika guru tukar ke unit LAIN, isi & simpan, kemudian
+  // kembali ke unit ASAL yang sudah pun ada rekod (cth: Minggu 1 Pengakap),
+  // medan tidak freeze semula walaupun rekod itu sedia ada. Baiki: selepas
+  // dropdown Minggu disegar semula (dengan tanda ✅), semak sama ada Minggu
+  // yang SEDANG dipilih sudah ada rekod untuk unit baharu ini - jika ya,
+  // muatkan & kunci semula secara automatik (macam guru klik "Papar Senarai
+  // Murid" sendiri); jika tidak, baru buka medan untuk kemasukan baharu.
+  async handleUnitChange(unitId) {
+    const weeks = await this.refreshMingguIndicators('khMinggu', unitId);
+    if (!unitId) { this.unlockSessionFields(); return; }
+
+    const selectedMinggu = Utils.el('khMinggu').value;
+    const existing = weeks.find(w => String(w.minggu) === String(selectedMinggu));
+
+    if (existing && existing.available) {
+      // Pastikan medan aktif dahulu supaya loadStudentsForEntry() boleh
+      // baca/isi nilainya; nilai placeholder Masa (jika kosong) akan
+      // ditimpa serta-merta oleh rekod sedia ada yang dimuatkan.
+      ['khMinggu', 'khTarikh', 'khMasaMula', 'khMasaTamat'].forEach(id => { Utils.el(id).disabled = false; });
+      if (!Utils.el('khMasaMula').value) Utils.el('khMasaMula').value = '00:00';
+      if (!Utils.el('khMasaTamat').value) Utils.el('khMasaTamat').value = '00:00';
+      await this.loadStudentsForEntry();
+    } else {
+      this.unlockSessionFields();
+    }
+  },
+
   // Tandakan minggu yang SUDAH mempunyai rekod kehadiran dengan ikon ✅ dalam
   // dropdown Minggu, supaya guru nampak dengan jelas minggu mana yang sudah
   // diisi (merangkumi Tahun 4/5/6 sekali, kerana satu sesi kehadiran meliputi
   // semua murid unit tersebut, bukan diasingkan ikut tahun).
   async refreshMingguIndicators(selectId, unitId) {
     const select = Utils.el(selectId);
-    if (!unitId) { Shared.populateWeekSelect(select, selectId === 'khPdfMinggu'); return; }
+    if (!unitId) { Shared.populateWeekSelect(select, selectId === 'khPdfMinggu'); return []; }
 
     const previousValue = select.value;
     try {
@@ -129,9 +155,11 @@ const TabKehadiran = {
         select.appendChild(opt);
       });
       if (previousValue) select.value = previousValue;
+      return weeks;
     } catch (err) {
       // Senyap - biar guru tetap boleh pilih minggu secara manual walaupun status tidak dapat dimuat
       Shared.populateWeekSelect(select, selectId === 'khPdfMinggu');
+      return [];
     }
   },
 
@@ -166,6 +194,7 @@ const TabKehadiran = {
         Utils.el('khSessionHint').textContent = 'Rekod baharu akan dicipta untuk minggu ini.';
         Utils.el('khSimpanBtn').textContent = 'Simpan Kehadiran';
       }
+      const alreadyFilled = !!data.session; // "diisi" = rekod SUDAH wujud (bukan sekadar dipapar)
 
       (data.records || []).forEach(r => {
         this.attendanceMap[r.studentId] = r.statusKehadiran === 'Hadir';
@@ -180,7 +209,13 @@ const TabKehadiran = {
       document.querySelectorAll('#khYearTabs .year-btn').forEach(b => b.classList.remove('active'));
       document.querySelector('#khYearTabs .year-btn[data-tahun="4"]').classList.add('active');
       this.renderStudentList();
-      this.lockSessionFields();
+      // PENTING: kunci medan HANYA jika minggu ini SUDAH ada rekod tersimpan
+      // (guru membuka semula minggu yang sedia ada). Jika ini minggu BAHARU
+      // (belum pernah diisi/disimpan), medan KEKAL boleh edit sehingga guru
+      // benar-benar klik Simpan - baru dikunci (lihat saveAttendance()).
+      // Sebelum ini fungsi dikunci serta-merta selepas klik "Papar Senarai
+      // Murid" walaupun minggu itu masih kosong - punca bug dilaporkan guru.
+      if (alreadyFilled) this.lockSessionFields();
 
     } catch (err) {
       Utils.toast(Utils.friendlyError(err), 'error');
