@@ -28,6 +28,7 @@ const TabKehadiran = {
     Shared.populateUnitSelect(Utils.el('khUnit'), Utils.el('khKategori').value);
 
     Utils.el('khUnit').addEventListener('change', (e) => this.handleUnitChange(e.target.value));
+    Utils.el('khMinggu').addEventListener('change', () => this.handleMingguChange());
 
     Utils.el('khPdfKategori').addEventListener('change', (e) => {
       Shared.populateUnitSelect(Utils.el('khPdfUnit'), e.target.value);
@@ -143,6 +144,30 @@ const TabKehadiran = {
       // di sini kerana rekod SUDAH wujud; nilai sebenar datang terus
       // daripada rekod tersimpan itu sendiri. Guna fetchAndRenderSession()
       // terus (tiada validasi Tarikh/Masa).
+      this.setSessionFieldsInteractive(true);
+      await this.fetchAndRenderSession(unitId, selectedMinggu);
+    } else {
+      this.unlockSessionFields();
+    }
+  },
+
+  // Tukar Minggu (dropdown kini SENTIASA boleh ditukar - lihat
+  // setSessionFieldsInteractive()) mesti disemak macam handleUnitChange():
+  // paparkan "Kemaskini Maklumat Sesi" HANYA jika minggu yang BAHARU dipilih
+  // itu sudah ada rekod kehadiran tersimpan (tanda ✅ dalam pilihan dropdown
+  // - diletak oleh refreshMingguIndicators(), jadi tiada panggilan API
+  // tambahan diperlukan di sini). Jika minggu itu belum diisi, kembali ke
+  // paparan "Papar Senarai Murid" (unlock) supaya guru boleh isi sesi baharu.
+  async handleMingguChange() {
+    const unitId = Utils.el('khUnit').value;
+    const mingguSelect = Utils.el('khMinggu');
+    const selectedMinggu = mingguSelect.value;
+    if (!unitId || !selectedMinggu) { this.unlockSessionFields(); return; }
+
+    const selectedOption = mingguSelect.selectedOptions[0];
+    const alreadyFilled = !!selectedOption && selectedOption.textContent.includes('✅');
+
+    if (alreadyFilled) {
       this.setSessionFieldsInteractive(true);
       await this.fetchAndRenderSession(unitId, selectedMinggu);
     } else {
