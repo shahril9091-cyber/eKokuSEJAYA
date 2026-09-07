@@ -85,7 +85,7 @@ const TabErph = {
       weeks.forEach(w => {
         const chip = document.createElement('button');
         chip.className = 'week-chip ' + (w.available ? 'available' : 'disabled');
-        chip.textContent = `MINGGU ${w.minggu}`;
+        chip.textContent = `MINGGU ${w.minggu}` + (w.erphFilled ? ' ✅' : '');
         chip.addEventListener('click', () => {
           if (!w.available) {
             Utils.el('erWeekHint').textContent = 'Tiada rekod kehadiran untuk minggu ini. Sila lengkapkan Rekod Kehadiran terlebih dahulu.';

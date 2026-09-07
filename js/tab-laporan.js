@@ -213,7 +213,7 @@ const TabLaporan = {
       weeks.forEach(w => {
         const chip = document.createElement('button');
         chip.className = 'week-chip ' + (w.available ? 'available' : 'disabled');
-        chip.textContent = `MINGGU ${w.minggu}`;
+        chip.textContent = `MINGGU ${w.minggu}` + (w.reportFilled ? ' ✅' : '');
         chip.addEventListener('click', () => {
           if (!w.available) {
             Utils.el('lpWeekHint').textContent = 'Tiada rekod kehadiran untuk minggu ini. Sila lengkapkan Rekod Kehadiran terlebih dahulu.';
@@ -265,12 +265,28 @@ const TabLaporan = {
       Utils.el('lpRefleksi').value = report.refleksi || '';
       Utils.el('lpDisediakanOleh').value = report.disediakanOleh || '';
 
-      const urls = report.gambarUrls || [];
-      urls.forEach((url, idx) => {
-        if (!url) return;
-        this.existingFileIds[idx] = report.gambarFileIds[idx];
+      // NOTA: guna getImageAsBase64 (bukan report.gambarUrls terus) supaya
+      // pratonton gambar sentiasa terpapar. URL Google Drive ("uc?export=view")
+      // sering GAGAL dimuatkan terus dalam tag <img> (Drive menyekat hotlink/
+      // memerlukan sesi log masuk Google aktif dalam pelayar) - punca ikon
+      // gambar pecah yang dilaporkan guru. Ambil bait sebenar melalui backend
+      // (akses penuh DriveApp) sebagai data URL, sama seperti kaedah Jana PDF.
+      const fileIds = report.gambarFileIds || [];
+      const dataUrls = await Promise.all(fileIds.map(async (fileId) => {
+        if (!fileId) return null;
+        try {
+          const result = await Api.call('getImageAsBase64', { fileId });
+          return result.dataUrl;
+        } catch (e) {
+          console.error(e);
+          return null;
+        }
+      }));
+      dataUrls.forEach((dataUrl, idx) => {
+        if (!dataUrl) return;
+        this.existingFileIds[idx] = fileIds[idx];
         const preview = Utils.el('lpPreview' + (idx + 1));
-        preview.src = url;
+        preview.src = dataUrl;
         preview.classList.remove('hidden');
         this.toggleImagePlaceholder(idx + 1, true);
       });
