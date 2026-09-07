@@ -41,6 +41,7 @@ const TabKehadiran = {
     });
 
     Utils.el('khPaparBtn').addEventListener('click', () => this.loadStudentsForEntry());
+    Utils.el('khEditSesiBtn').addEventListener('click', () => this.unlockSessionFields());
 
     document.querySelectorAll('#khYearTabs .year-btn').forEach(btn => {
       btn.addEventListener('click', () => {
@@ -68,6 +69,36 @@ const TabKehadiran = {
     });
 
     Utils.el('khJanaPdfBtn').addEventListener('click', () => this.generatePdf());
+  },
+
+  // Selepas senarai murid untuk sesi (kategori/unit/minggu/tarikh/masa) dipaparkan
+  // atau disimpan, kunci medan persediaan sesi supaya guru tidak tertekan tukar
+  // unit/minggu secara tidak sengaja sedangkan sedang menanda kehadiran. Senarai
+  // murid dan butang "Simpan Kehadiran" KEKAL aktif - hanya medan persediaan dikunci.
+  lockSessionFields() {
+    ['khKategori', 'khUnit', 'khMinggu', 'khTarikh', 'khMasaMula', 'khMasaTamat'].forEach(id => {
+      Utils.el(id).disabled = true;
+    });
+    Utils.el('khPaparBtn').classList.add('hidden');
+    Utils.el('khEditSesiBtn').classList.remove('hidden');
+  },
+
+  // Guru klik "Kemaskini Maklumat Sesi" untuk buka semula medan persediaan
+  // (cth: hendak tukar ke unit/minggu lain). Senarai murid disembunyikan
+  // semula sehingga guru klik "Papar Senarai Murid" untuk sesi baharu itu.
+  unlockSessionFields() {
+    ['khKategori', 'khMinggu', 'khTarikh', 'khMasaMula', 'khMasaTamat'].forEach(id => {
+      Utils.el(id).disabled = false;
+    });
+    Shared.populateUnitSelect(Utils.el('khUnit'), Utils.el('khKategori').value); // kekalkan logik enable/disable sedia ada mengikut kategori
+    Utils.el('khPaparBtn').classList.remove('hidden');
+    Utils.el('khEditSesiBtn').classList.add('hidden');
+    Utils.el('khStudentCard').classList.add('hidden');
+    Utils.el('khSessionHint').textContent = '';
+    Utils.el('khSimpanBtn').textContent = 'Simpan Kehadiran';
+    this.currentSessionId = null;
+    this.allStudents = [];
+    this.attendanceMap = {};
   },
 
   // Tandakan minggu yang SUDAH mempunyai rekod kehadiran dengan ikon ✅ dalam
@@ -126,8 +157,10 @@ const TabKehadiran = {
         Utils.el('khMasaMula').value = data.session.masaMula || masaMula;
         Utils.el('khMasaTamat').value = data.session.masaTamat || masaTamat;
         Utils.el('khSessionHint').textContent = 'Rekod sedia ada untuk minggu ini dimuatkan - anda sedang mengemaskini.';
+        Utils.el('khSimpanBtn').textContent = 'Kemaskini Kehadiran';
       } else {
         Utils.el('khSessionHint').textContent = 'Rekod baharu akan dicipta untuk minggu ini.';
+        Utils.el('khSimpanBtn').textContent = 'Simpan Kehadiran';
       }
 
       (data.records || []).forEach(r => {
@@ -143,6 +176,7 @@ const TabKehadiran = {
       document.querySelectorAll('#khYearTabs .year-btn').forEach(b => b.classList.remove('active'));
       document.querySelector('#khYearTabs .year-btn[data-tahun="4"]').classList.add('active');
       this.renderStudentList();
+      this.lockSessionFields();
 
     } catch (err) {
       Utils.toast(Utils.friendlyError(err), 'error');
@@ -211,8 +245,10 @@ const TabKehadiran = {
       const result = await Api.call('saveAttendanceSession', payload);
       this.currentSessionId = result.sessionId;
       Utils.el('khSessionHint').textContent = 'Rekod telah disimpan. Anda boleh kemaskini semula bila-bila masa.';
+      Utils.el('khSimpanBtn').textContent = 'Kemaskini Kehadiran';
       Utils.toast('Kehadiran berjaya disimpan.', 'success');
       this.refreshMingguIndicators('khMinggu', unitId); // papar ✅ serta-merta untuk minggu ini
+      this.lockSessionFields();
     } catch (err) {
       Utils.toast(Utils.friendlyError(err), 'error');
     } finally {
