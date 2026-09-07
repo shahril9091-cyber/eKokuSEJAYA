@@ -35,7 +35,23 @@ const Utils = {
 
   formatDateDisplay(isoDate) {
     if (!isoDate) return '-';
-    const d = new Date(isoDate + 'T00:00:00');
+
+    // Terima pelbagai bentuk input dengan selamat: objek Date sebenar,
+    // string "YYYY-MM-DD" bersih, ATAU string ISO penuh (cth: sekiranya
+    // Google Sheets/Apps Script pulangkan cap masa penuh seperti
+    // "2026-09-07T00:00:00.000Z" - menambah "T00:00:00" terus pada string
+    // sebegini akan hasilkan tarikh tidak sah dan RANAP dengan ralat
+    // "Invalid time value". Ambil 10 aksara pertama (bahagian tarikh
+    // sahaja) sebelum bina semula supaya sentiasa selamat.
+    let d;
+    if (isoDate instanceof Date) {
+      d = isoDate;
+    } else {
+      const datePart = String(isoDate).slice(0, 10);
+      d = new Date(datePart + 'T00:00:00');
+    }
+
+    if (isNaN(d.getTime())) return String(isoDate); // fallback selamat - jangan ranap
     return new Intl.DateTimeFormat(CONFIG.LOCALE, { day: '2-digit', month: 'short', year: 'numeric' }).format(d);
   },
 

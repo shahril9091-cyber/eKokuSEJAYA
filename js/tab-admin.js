@@ -51,6 +51,9 @@ const TabAdmin = {
     Utils.el('migConfirmBtn').addEventListener('click', () => this.executeMigration());
 
     Utils.el('masterSaveBtn').addEventListener('click', () => this.saveMasterLists());
+
+    Utils.el('dangerDeleteRecordsBtn').addEventListener('click', () => this.dangerDeleteRecords());
+    Utils.el('dangerDeleteAllBtn').addEventListener('click', () => this.dangerDeleteAll());
   },
 
   checkExistingSession() {
@@ -95,6 +98,7 @@ const TabAdmin = {
     Utils.el('adminContentArea').classList.remove('hidden');
     Utils.el('adminYearInfo').textContent = `Tahun Semasa: ${Shared.academicYear}`;
     Utils.el('adminSetYearInput').value = Shared.academicYear;
+    Utils.el('dangerYearLabel').textContent = Shared.academicYear;
 
     Shared.populateAllUnitsSelect(Utils.el('placeUnitSelect'));
     Shared.populateAllUnitsSelect(Utils.el('placeTeacherUnitSelect'));
@@ -121,6 +125,7 @@ const TabAdmin = {
       Shared.academicYear = String(year);
       Utils.el('academicYearBadge').textContent = `Tahun: ${Shared.academicYear}`;
       Utils.el('adminYearInfo').textContent = `Tahun Semasa: ${Shared.academicYear}`;
+      Utils.el('dangerYearLabel').textContent = Shared.academicYear;
       await Shared.refreshUnits();
       await Shared.refreshTeachers();
       Utils.toast('Tahun akademik berjaya dikemaskini.', 'success');
@@ -212,15 +217,15 @@ const TabAdmin = {
       const unitByStudent = {};
       placements.forEach(p => {
         if (!unitByStudent[p.studentId]) unitByStudent[p.studentId] = {};
-        unitByStudent[p.studentId][p.kategori] = p.unitNama;
+        unitByStudent[p.studentId][p.kategori] = p.unitId;
       });
 
       this._studentCache = students.map(s => {
         const m = unitByStudent[s.studentId] || {};
         return Object.assign({}, s, {
-          unitBeruniform: m['UNIT BERUNIFORM'] || '-',
-          kelabPersatuan: m['KELAB / PERSATUAN'] || '-',
-          sukanPermainan: m['SUKAN / PERMAINAN'] || '-'
+          unitBeruniformId: m['UNIT BERUNIFORM'] || '',
+          kelabPersatuanId: m['KELAB / PERSATUAN'] || '',
+          sukanPermainanId: m['SUKAN / PERMAINAN'] || ''
         });
       });
     }
@@ -229,19 +234,47 @@ const TabAdmin = {
     const rows = this._studentCache.filter(s =>
       !search || s.nama.toUpperCase().includes(search) || String(s.kelas || '').toUpperCase().includes(search)
     );
+
+    // Lajur Unit Beruniform/Kelab/Sukan ialah dropdown "hidup" - tukar
+    // pilihan terus kemaskini penempatan murid (tiada perlu tekan Edit/Simpan
+    // atau ke skrin Penempatan Murid berasingan).
+    const categoryColumn = (kategori, key) => ({
+      key: key,
+      label: kategori === 'UNIT BERUNIFORM' ? 'Unit Beruniform' : (kategori === 'KELAB / PERSATUAN' ? 'Kelab/Persatuan' : 'Sukan/Permainan'),
+      editable: false,
+      liveSelectOptions: () => {
+        const opts = [{ value: '', label: '-- Tiada --' }];
+        Shared.getUnitsByKategori(kategori).forEach(u => opts.push({ value: u.unitId, label: u.namaUnit }));
+        return opts;
+      },
+      onLiveChange: (row, unitId) => this.changeStudentCategoryUnit(row.studentId, kategori, unitId)
+    });
+
     // ID murid sengaja TIDAK dipaparkan di sini (dijana & diurus sistem
     // secara dalaman sahaja). Tahun tidak boleh diedit terus - ia terbitan
-    // automatik daripada Kelas (tukar Kelas untuk kemaskini Tahun). Lajur
-    // unit/kelab/sukan bersifat maklumat sahaja (edit di Penempatan Murid).
+    // automatik daripada Kelas (tukar Kelas untuk kemaskini Tahun).
     this.renderAdminTable(Utils.el('stuListTable'), rows,
       [{ key: 'nama', label: 'Nama', editable: true },
        { key: 'kelas', label: 'Kelas', editable: true },
        { key: 'tahun', label: 'Tahun', editable: false },
-       { key: 'unitBeruniform', label: 'Unit Beruniform', editable: false },
-       { key: 'kelabPersatuan', label: 'Kelab/Persatuan', editable: false },
-       { key: 'sukanPermainan', label: 'Sukan/Permainan', editable: false },
+       categoryColumn('UNIT BERUNIFORM', 'unitBeruniformId'),
+       categoryColumn('KELAB / PERSATUAN', 'kelabPersatuanId'),
+       categoryColumn('SUKAN / PERMAINAN', 'sukanPermainanId'),
        { key: 'status', label: 'Status', editable: false }],
       'studentId', 'Students', () => this.renderStudentTable(true));
+  },
+
+  async changeStudentCategoryUnit(studentId, kategori, unitId) {
+    try {
+      Utils.showLoading('Mengemaskini penempatan...');
+      await Api.call('setStudentUnitForCategory', { studentId, kategori, unitId, academicYear: Shared.academicYear }, true);
+      Utils.toast('Penempatan murid berjaya dikemaskini.', 'success');
+      await this.renderStudentTable(true);
+    } catch (err) {
+      Utils.toast(Utils.friendlyError(err), 'error');
+    } finally {
+      Utils.hideLoading();
+    }
   },
 
   // ==================== GURU ====================
@@ -368,11 +401,28 @@ const TabAdmin = {
 
     try {
       Utils.showLoading('Memuatkan senarai murid...');
-      const [allStudents, members] = await Promise.all([
+      const [allStudents, members, allPlacements] = await Promise.all([
         Api.call('getStudents', { academicYear: Shared.academicYear }),
-        Api.call('getUnitMembers', { unitId, academicYear: Shared.academicYear })
+        Api.call('getUnitMembers', { unitId, academicYear: Shared.academicYear }),
+        Api.call('getAllPlacements', { academicYear: Shared.academicYear })
       ]);
-      this._placementStudents = allStudents.filter(s => s.status !== 'Tidak Aktif');
+
+      // Seorang murid hanya dibenarkan SATU unit setiap KATEGORI (Unit
+      // Beruniform / Kelab-Persatuan / Sukan-Permainan). Murid yang sudah
+      // menjadi ahli unit LAIN dalam kategori yang sama disembunyikan
+      // terus daripada senarai ini (bukan sekadar tidak ditanda) - mereka
+      // tetap akan muncul untuk kategori LAIN yang belum diisi.
+      const currentUnit = Shared.getUnitById(unitId);
+      const currentKategori = currentUnit ? currentUnit.kategori : '';
+      const occupiedElsewhereInCategory = new Set(
+        allPlacements
+          .filter(p => p.kategori === currentKategori && String(p.unitId) !== String(unitId))
+          .map(p => String(p.studentId))
+      );
+
+      this._placementStudents = allStudents.filter(s =>
+        s.status !== 'Tidak Aktif' && !occupiedElsewhereInCategory.has(String(s.studentId))
+      );
       this._placementOriginalMemberIds = new Set(members.map(m => String(m.studentId)));
       // Set "kerja" checkbox semasa - bermula sama dengan ahli sedia ada,
       // tetapi dikemaskini setiap kali guru tick/untick, dan KEKAL walaupun
@@ -707,7 +757,18 @@ const TabAdmin = {
     rows.forEach(row => {
       html += `<tr data-id="${Utils.escapeHtml(row[idField])}">`;
       columns.forEach(c => {
-        html += `<td data-key="${c.key}" data-editable="${c.editable}">${Utils.escapeHtml(row[c.key])}</td>`;
+        if (c.liveSelectOptions) {
+          // Lajur "hidup" (cth: Unit Beruniform) - SENTIASA dipaparkan sebagai
+          // dropdown (bukan perlu tekan "Edit" dahulu); tukar nilai terus
+          // memanggil onLiveChange tanpa perlu tekan "Simpan".
+          const opts = c.liveSelectOptions(row);
+          const optionsHtml = opts.map(o =>
+            `<option value="${Utils.escapeHtml(o.value)}" ${String(o.value) === String(row[c.key] || '') ? 'selected' : ''}>${Utils.escapeHtml(o.label)}</option>`
+          ).join('');
+          html += `<td data-key="${c.key}" data-editable="false"><select class="live-select" style="min-width:130px;">${optionsHtml}</select></td>`;
+        } else {
+          html += `<td data-key="${c.key}" data-editable="${c.editable}">${Utils.escapeHtml(row[c.key])}</td>`;
+        }
       });
       html += `<td>
         <button class="btn btn-ghost action-btn edit-btn">Edit</button>
@@ -716,6 +777,17 @@ const TabAdmin = {
     });
     html += '</tbody>';
     tableEl.innerHTML = html;
+
+    tableEl.querySelectorAll('tr[data-id]').forEach(tr => {
+      tr.querySelectorAll('td[data-key] select.live-select').forEach(sel => {
+        const key = sel.closest('td').dataset.key;
+        const col = columnsByKey[key];
+        sel.addEventListener('change', async () => {
+          const row = rows.find(r => String(r[idField]) === tr.dataset.id);
+          if (col && col.onLiveChange) await col.onLiveChange(row, sel.value);
+        });
+      });
+    });
 
     tableEl.querySelectorAll('tr[data-id]').forEach(tr => {
       const editBtn = tr.querySelector('.edit-btn');
@@ -772,5 +844,74 @@ const TabAdmin = {
         }
       });
     });
+  },
+
+  // ==================== ZON BAHAYA ====================
+  // Dua lapisan pengesahan: modal penerangan (Utils.confirmModal) + guru
+  // mesti TAIP tepat frasa pengesahan (window.prompt). Backend turut
+  // mengesahkan semula frasa yang sama (pertahanan berlapis) - lihat
+  // Danger.gs. Skop terhad kepada tahun akademik SEMASA sahaja.
+  async dangerDeleteRecords() {
+    const ok = await Utils.confirmModal(
+      `Ini akan PADAM SEMUA rekod Kehadiran, eRPH, dan Laporan Mingguan bagi tahun akademik ${Shared.academicYear}. Data Murid/Guru/Unit TIDAK terjejas. Tindakan ini TIDAK BOLEH DIBATALKAN.`,
+      'Amaran: Padam Semua Rekod'
+    );
+    if (!ok) return;
+
+    const typed = window.prompt('Untuk sahkan, taip TEPAT: PADAM REKOD');
+    if (typed === null) return; // guru batalkan prompt
+    if (typed !== 'PADAM REKOD') {
+      Utils.toast('Teks pengesahan tidak sepadan. Tindakan dibatalkan.', 'error');
+      return;
+    }
+
+    try {
+      Utils.showLoading('Memadam semua rekod...');
+      const result = await Api.call('deleteAllTransactionRecords', {
+        academicYear: Shared.academicYear, confirmText: typed
+      }, true);
+      const summary = Object.keys(result.counts).map(k => `${k}: ${result.counts[k]}`).join(', ');
+      Utils.toast(`Semua rekod tahun ${Shared.academicYear} berjaya dipadam (${summary}).`, 'success', 8000);
+    } catch (err) {
+      Utils.toast(Utils.friendlyError(err), 'error');
+    } finally {
+      Utils.hideLoading();
+    }
+  },
+
+  async dangerDeleteAll() {
+    const ok = await Utils.confirmModal(
+      `Ini akan PADAM SEMUA DATA (Murid, Guru, Unit, Penempatan, Kehadiran, eRPH, Laporan) bagi tahun akademik ${Shared.academicYear}. Tindakan ini TIDAK BOLEH DIBATALKAN.`,
+      'Amaran: Padam SEMUA Data'
+    );
+    if (!ok) return;
+
+    const typed = window.prompt('Untuk sahkan, taip TEPAT: PADAM SEMUA');
+    if (typed === null) return;
+    if (typed !== 'PADAM SEMUA') {
+      Utils.toast('Teks pengesahan tidak sepadan. Tindakan dibatalkan.', 'error');
+      return;
+    }
+
+    try {
+      Utils.showLoading('Memadam semua data...');
+      const result = await Api.call('deleteAllData', {
+        academicYear: Shared.academicYear, confirmText: typed
+      }, true);
+      const summary = Object.keys(result.counts).map(k => `${k}: ${result.counts[k]}`).join(', ');
+      Utils.toast(`Semua data tahun ${Shared.academicYear} berjaya dipadam (${summary}).`, 'success', 8000);
+
+      await Shared.refreshUnits();
+      await Shared.refreshTeachers();
+      Shared.populateAllUnitsSelect(Utils.el('placeUnitSelect'));
+      Shared.populateAllUnitsSelect(Utils.el('placeTeacherUnitSelect'));
+      await this.renderStudentTable(true);
+      await this.renderTeacherTable(true);
+      await this.renderUnitTable(true);
+    } catch (err) {
+      Utils.toast(Utils.friendlyError(err), 'error');
+    } finally {
+      Utils.hideLoading();
+    }
   }
 };

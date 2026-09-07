@@ -14,17 +14,18 @@
 
 <!-- ==================== HEADER ==================== -->
 <header class="app-header">
-  <div class="header-left">
-    <img src="https://i.postimg.cc/DZkdW8qn/Logo-SK-Seri-Jaya-Transparent.png" alt="Logo Sekolah" class="school-logo" id="schoolLogo">
-    <div class="header-text">
-      <h1 id="schoolNameHeader">SEKOLAH KEBANGSAAN SERI JAYA</h1>
-      <p id="schoolLocationHeader">KEMAMAN, TERENGGANU</p>
-      <p class="system-name" id="systemNameHeader">SISTEM PENGURUSAN KOKURIKULUM</p>
-    </div>
+  <img src="https://i.postimg.cc/DZkdW8qn/Logo-SK-Seri-Jaya-Transparent.png" alt="Logo Sekolah" class="school-logo" id="schoolLogo">
+  <div class="header-text">
+    <h1 class="system-name" id="systemNameHeader">SISTEM PENGURUSAN KOKURIKULUM</h1>
+    <p id="schoolNameHeader">SEKOLAH KEBANGSAAN SERI JAYA</p>
+    <p id="schoolLocationHeader">KEMAMAN, TERENGGANU</p>
   </div>
   <div class="header-right">
-    <div class="live-date" id="liveDate">-</div>
-    <div class="live-time" id="liveTime">-</div>
+    <div class="live-date-time-pill">
+      <span class="live-date" id="liveDate">-</span>
+      <span class="sep">|</span>
+      <span class="live-time" id="liveTime">-</span>
+    </div>
     <div class="academic-year-badge" id="academicYearBadge">Tahun: -</div>
   </div>
 </header>
@@ -232,22 +233,22 @@
           <label>Gambar Aktiviti (4 keping)</label>
           <div class="image-upload-grid">
             <div class="image-upload-box" data-slot="1">
-              <input type="file" accept="image/*" capture="environment" id="lpGambar1">
+              <input type="file" accept="image/*" id="lpGambar1">
               <img id="lpPreview1" class="hidden">
               <span class="image-placeholder-text">+ Gambar 1</span>
             </div>
             <div class="image-upload-box" data-slot="2">
-              <input type="file" accept="image/*" capture="environment" id="lpGambar2">
+              <input type="file" accept="image/*" id="lpGambar2">
               <img id="lpPreview2" class="hidden">
               <span class="image-placeholder-text">+ Gambar 2</span>
             </div>
             <div class="image-upload-box" data-slot="3">
-              <input type="file" accept="image/*" capture="environment" id="lpGambar3">
+              <input type="file" accept="image/*" id="lpGambar3">
               <img id="lpPreview3" class="hidden">
               <span class="image-placeholder-text">+ Gambar 3</span>
             </div>
             <div class="image-upload-box" data-slot="4">
-              <input type="file" accept="image/*" capture="environment" id="lpGambar4">
+              <input type="file" accept="image/*" id="lpGambar4">
               <img id="lpPreview4" class="hidden">
               <span class="image-placeholder-text">+ Gambar 4</span>
             </div>
@@ -544,6 +545,14 @@
           </div>
         </div>
         <button class="btn btn-secondary" id="masterSaveBtn">Simpan Master Data</button>
+      </div>
+
+      <!-- Zon Bahaya -->
+      <div class="card" id="dangerZoneCard">
+        <h3 style="color: var(--red);">⚠️ Zon Bahaya</h3>
+        <p class="hint-text">Tindakan di bawah TIDAK BOLEH DIBATALKAN dan hanya melibatkan data bagi tahun akademik semasa (<span id="dangerYearLabel">-</span>). Gunakan hanya jika benar-benar perlu, contoh: buang data ujian/testing sebelum mula guna sistem sebenar.</p>
+        <button class="btn btn-danger btn-block" id="dangerDeleteRecordsBtn">Padam Semua Rekod (Kehadiran, eRPH, Laporan)</button>
+        <button class="btn btn-danger btn-block" id="dangerDeleteAllBtn">Padam Semua Data (Murid, Guru, Unit &amp; Semua Rekod)</button>
       </div>
 
     </div>

@@ -104,10 +104,10 @@ const TabAnalisis = {
       options: {
         responsive: true,
         maintainAspectRatio: false, // .chart-box kini mengawal tinggi sebenar (lihat style.css)
-        plugins: { legend: { labels: { color: '#e6ebf3' } } },
+        plugins: { legend: { labels: { color: '#1e293b' } } },
         scales: {
-          x: { ticks: { color: '#a9b6cf' }, grid: { color: '#1e3660' } },
-          y: { ticks: { color: '#a9b6cf' }, grid: { color: '#1e3660' }, beginAtZero: true }
+          x: { ticks: { color: '#64748b' }, grid: { color: '#e2e8f0' } },
+          y: { ticks: { color: '#64748b' }, grid: { color: '#e2e8f0' }, beginAtZero: true }
         }
       }
     });
@@ -125,7 +125,7 @@ const TabAnalisis = {
       options: {
         responsive: true,
         maintainAspectRatio: false,
-        plugins: { legend: { labels: { color: '#e6ebf3' } } }
+        plugins: { legend: { labels: { color: '#1e293b' } } }
       }
     });
   }

@@ -389,17 +389,34 @@ const TabLaporan = {
         y += Math.max(6, lines.length * 5) + 2;
       });
 
-      // Gambar (2 x 2 grid). Perlukan ruang untuk label + KEDUA-DUA baris
-      // gambar (80mm x 2 + jurang) - bukan sekadar satu baris - jika tidak,
-      // baris kedua akan melimpah ke luar tepi bawah kertas apabila laporan
-      // mempunyai 3-4 gambar.
-      const imgSize = 80;
-      y = PdfHelper.ensureSpace(doc, y, 5 + imgSize * 2 + 5);
+      // Gambar (2 x 2 grid). Daripada memaksa muka surat baharu bila ruang
+      // tidak cukup (yang boleh hasilkan PDF 2 muka surat), KECILKAN saiz
+      // gambar supaya sentiasa muat dalam ruang BAKI pada muka surat yang
+      // sama - PDF kekal 1 muka surat walaupun pengisian maklumat banyak.
+      // Had minimum 32mm supaya gambar tidak jadi terlalu kecil untuk
+      // dilihat; jika ruang benar-benar tidak cukup walaupun pada saiz
+      // minimum, barulah muka surat baharu digunakan sebagai jalan terakhir.
+      const pageHeight = doc.internal.pageSize.getHeight();
+      const bottomMargin = 15;
+      const labelHeight = 5;
+      const rowGap = 5;
+      const availableHeight = pageHeight - bottomMargin - y - labelHeight - rowGap;
+      const idealImgSize = Math.floor(availableHeight / 2);
+      let imgSize = Math.max(32, Math.min(80, idealImgSize));
+
+      if (idealImgSize < 32) {
+        // Ruang benar-benar tidak cukup walaupun pada saiz minimum - jalan
+        // terakhir, mulakan muka surat baharu untuk gambar sahaja.
+        doc.addPage();
+        y = 20;
+        imgSize = 80;
+      }
+
       doc.setFont('helvetica', 'bold');
       doc.text('Gambar Aktiviti:', 14, y);
-      y += 5;
+      y += labelHeight;
 
-      const positions = [[14, y], [102, y], [14, y + imgSize + 5], [102, y + imgSize + 5]];
+      const positions = [[14, y], [102, y], [14, y + imgSize + rowGap], [102, y + imgSize + rowGap]];
 
       // Sediakan data setiap gambar: guna dataURL baharu (jika baru diupload
       // sesi ini) atau ambil bait sebenar daripada Google Drive melalui
