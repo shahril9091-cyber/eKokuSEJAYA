@@ -9,7 +9,7 @@
 const CONFIG = {
   // GANTIKAN dengan URL "Web App" selepas deploy Google Apps Script.
   // Contoh: https://script.google.com/macros/s/AKfycbXXXXXXXXXXXXXXXXXX/exec
-  WEBAPP_URL: 'https://script.google.com/macros/library/d/18YOzEnO1MGrbrlWHfVeRtTd_wg7_-R5h4X1PIYfWFZAUglgwIbvJFzKs/8',
+  WEBAPP_URL: 'https://script.google.com/macros/s/AKfycbzkTIJKSc0MmxUEi4v01yf9IjvPhMeNudCNiUxsooPKO2ibr6xtSuf6ooIvlP_KA8UIrQ/exec',
 
   SCHOOL_NAME: 'SEKOLAH KEBANGSAAN SERI JAYA',
   SCHOOL_LOCATION: 'KEMAMAN, TERENGGANU',
