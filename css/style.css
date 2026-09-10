@@ -500,6 +500,22 @@ select:disabled {
 .data-table td { color: var(--text-primary); }
 .data-table .action-btn { padding: 4px 8px; font-size: 11px; margin: 0 2px; }
 
+/* Bekukan lajur pertama (Nama) - dipakai pada Senarai Murid/Guru Semasa
+   supaya nama kekal kelihatan semasa scroll ke lajur Unit/Kelab/Sukan
+   yang berada jauh di sebelah kanan jadual. */
+.data-table.sticky-first-col th:first-child,
+.data-table.sticky-first-col td:first-child {
+  position: sticky;
+  left: 0;
+  z-index: 2;
+  background: var(--bg-card);
+  box-shadow: 2px 0 4px rgba(0, 0, 0, 0.08);
+}
+.data-table.sticky-first-col th:first-child {
+  z-index: 3;
+  background: var(--table-header-bg);
+}
+
 /* ---------------- ADMIN ---------------- */
 .admin-topbar {
   display: flex; justify-content: space-between; align-items: center;
