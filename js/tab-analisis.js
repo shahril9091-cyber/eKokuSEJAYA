@@ -60,17 +60,28 @@ const TabAnalisis = {
       Utils.el('anJumlahTidakHadir').textContent = result.jumlahTidakHadir;
       Utils.el('anPeratusKehadiran').textContent = result.peratus + '%';
 
-      // PENTING: tangguhkan lukisan carta ke frame seterusnya (selepas
-      // pelayar selesai "layout" kad yang baru dinyahsembunyi di atas).
-      // Jika Chart.js dicipta serta-merta dalam tick yang sama seperti
-      // classList.remove('hidden'), ia boleh mengukur tinggi bekas sebagai
-      // 0px (bekas belum selesai "reflow") - graf bar amat sensitif kepada ini.
-      requestAnimationFrame(() => {
-        this.renderBarChart(result.byUnit || []);
-      });
-
       this.renderErphTable(result.erphList || []);
       this.renderLaporanTable(result.laporanList || []);
+
+      // PENTING: tangguhkan lukisan carta ke DUA frame seterusnya (bukan
+      // satu) - selepas 2 jadual besar (eRPH/Laporan) turut ditambah dalam
+      // kad yang sama, satu requestAnimationFrame sahaja kadangkala tidak
+      // cukup untuk pelayar selesai "layout" sepenuhnya sebelum Chart.js
+      // mengukur tinggi bekas (boleh terbaca 0px dan carta senyap kosong).
+      // Turut dibalut try/catch supaya jika Chart.js gagal dimuat (cth.
+      // disekat rangkaian sekolah), guru nampak mesej jelas - bukan kosong
+      // senyap tanpa sebarang petunjuk.
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          try {
+            this.renderBarChart(result.byUnit || []);
+          } catch (chartErr) {
+            console.error(chartErr);
+            const box = Utils.el('anBarChart').closest('.chart-box');
+            box.innerHTML = '<h4>Kehadiran Mengikut Unit</h4><p class="hint-text">Graf tidak dapat dipaparkan (pustaka carta gagal dimuatkan). Sila muat semula halaman.</p>';
+          }
+        });
+      });
 
     } catch (err) {
       Utils.toast(Utils.friendlyError(err), 'error');
