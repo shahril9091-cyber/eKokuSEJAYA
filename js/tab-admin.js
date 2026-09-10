@@ -235,14 +235,26 @@ const TabAdmin = {
       !search || s.nama.toUpperCase().includes(search) || String(s.kelas || '').toUpperCase().includes(search)
     );
 
-    // Lajur Unit Beruniform/Kelab/Sukan ialah dropdown "hidup" - tukar
-    // pilihan terus kemaskini penempatan murid TANPA perlu tekan Edit/Simpan
-    // (lihat renderAdminTable) - KECUALI apabila baris itu SEDANG dalam mod
-    // Edit (guru sedang isi Nama/Kelas), dalam kes itu perubahan ditangguh
-    // dan dihantar SEKALI sahaja bersama Nama/Kelas apabila "Simpan" ditekan
-    // - elak satu panggilan API berasingan bagi SETIAP klik dropdown semasa
-    // guru isi maklumat murid baharu (punca lambat yang dilaporkan guru).
-    const categoryColumn = (kategori, key) => ({
+    // ID murid sengaja TIDAK dipaparkan di sini (dijana & diurus sistem
+    // secara dalaman sahaja). Tahun tidak boleh diedit terus - ia terbitan
+    // automatik daripada Kelas (tukar Kelas untuk kemaskini Tahun).
+    this.renderAdminTable(Utils.el('stuListTable'), rows,
+      [{ key: 'nama', label: 'Nama', editable: true },
+       { key: 'kelas', label: 'Kelas', editable: true },
+       { key: 'tahun', label: 'Tahun', editable: false },
+       this.categoryPlacementColumn('UNIT BERUNIFORM', 'unitBeruniformId', (row, unitId) => this.saveStudentCategoryPlacement(row.studentId, 'UNIT BERUNIFORM', unitId)),
+       this.categoryPlacementColumn('KELAB / PERSATUAN', 'kelabPersatuanId', (row, unitId) => this.saveStudentCategoryPlacement(row.studentId, 'KELAB / PERSATUAN', unitId)),
+       this.categoryPlacementColumn('SUKAN / PERMAINAN', 'sukanPermainanId', (row, unitId) => this.saveStudentCategoryPlacement(row.studentId, 'SUKAN / PERMAINAN', unitId)),
+       { key: 'status', label: 'Status', editable: false }],
+      'studentId', 'Students', () => this.renderStudentTable(true));
+  },
+
+  // ---- Lajur dropdown "penempatan pantas" (Unit Beruniform/Kelab/Sukan) -
+  // dikongsi antara Senarai Murid Semasa DAN Senarai Guru Semasa. Menukar
+  // pilihan TIDAK PERNAH terus disimpan (lihat renderAdminTable) - ia
+  // sentiasa ditangguh sehingga butang "Simpan" baris itu ditekan.
+  categoryPlacementColumn(kategori, key, onLiveChange) {
+    return {
       key: key,
       label: kategori === 'UNIT BERUNIFORM' ? 'Unit Beruniform' : (kategori === 'KELAB / PERSATUAN' ? 'Kelab/Persatuan' : 'Sukan/Permainan'),
       editable: false,
@@ -252,27 +264,17 @@ const TabAdmin = {
         return opts;
       },
       // Mutasi TULEN sahaja (tiada loading/toast/refetch) - chrome
-      // dikendalikan oleh PEMANGGIL (renderAdminTable), sama ada serta-merta
-      // (mod biasa) atau berkumpul (mod Edit) - lihat nota di atas.
-      onLiveChange: (row, unitId) => this.saveStudentCategoryPlacement(row.studentId, kategori, unitId)
-    });
-
-    // ID murid sengaja TIDAK dipaparkan di sini (dijana & diurus sistem
-    // secara dalaman sahaja). Tahun tidak boleh diedit terus - ia terbitan
-    // automatik daripada Kelas (tukar Kelas untuk kemaskini Tahun).
-    this.renderAdminTable(Utils.el('stuListTable'), rows,
-      [{ key: 'nama', label: 'Nama', editable: true },
-       { key: 'kelas', label: 'Kelas', editable: true },
-       { key: 'tahun', label: 'Tahun', editable: false },
-       categoryColumn('UNIT BERUNIFORM', 'unitBeruniformId'),
-       categoryColumn('KELAB / PERSATUAN', 'kelabPersatuanId'),
-       categoryColumn('SUKAN / PERMAINAN', 'sukanPermainanId'),
-       { key: 'status', label: 'Status', editable: false }],
-      'studentId', 'Students', () => this.renderStudentTable(true));
+      // dikendalikan oleh renderAdminTable apabila "Simpan" ditekan.
+      onLiveChange: onLiveChange
+    };
   },
 
   saveStudentCategoryPlacement(studentId, kategori, unitId) {
     return Api.call('setStudentUnitForCategory', { studentId, kategori, unitId, academicYear: Shared.academicYear }, true);
+  },
+
+  saveTeacherCategoryPlacement(teacherId, kategori, unitId) {
+    return Api.call('setTeacherUnitForCategory', { teacherId, kategori, unitId, academicYear: Shared.academicYear }, true);
   },
 
   // ==================== GURU ====================
@@ -331,20 +333,36 @@ const TabAdmin = {
         Api.call('getAllTeacherPlacements', { academicYear: Shared.academicYear })
       ]);
 
-      // Seorang guru boleh membimbing >1 unit - gabungkan sebagai satu senarai.
+      // Seorang guru boleh membimbing >1 unit - gabungkan sebagai satu senarai
+      // (lajur "Unit Dibimbing" penuh, untuk makluman) DAN simpan unit
+      // PERTAMA setiap kategori (untuk pra-isi 3 dropdown penempatan pantas
+      // di bawah - lihat categoryPlacementColumn/setTeacherUnitForCategory).
       const unitsByTeacher = {};
+      const categoryUnitByTeacher = {};
       placements.forEach(p => {
         if (!unitsByTeacher[p.teacherId]) unitsByTeacher[p.teacherId] = [];
         unitsByTeacher[p.teacherId].push(p.unitNama);
+
+        if (!categoryUnitByTeacher[p.teacherId]) categoryUnitByTeacher[p.teacherId] = {};
+        if (!categoryUnitByTeacher[p.teacherId][p.kategori]) categoryUnitByTeacher[p.teacherId][p.kategori] = p.unitId;
       });
 
-      this._teacherCache = teachers.map(t => Object.assign({}, t, {
-        unitDibimbing: (unitsByTeacher[t.teacherId] || []).join(', ') || '-'
-      }));
+      this._teacherCache = teachers.map(t => {
+        const m = categoryUnitByTeacher[t.teacherId] || {};
+        return Object.assign({}, t, {
+          unitDibimbing: (unitsByTeacher[t.teacherId] || []).join(', ') || '-',
+          unitBeruniformId: m['UNIT BERUNIFORM'] || '',
+          kelabPersatuanId: m['KELAB / PERSATUAN'] || '',
+          sukanPermainanId: m['SUKAN / PERMAINAN'] || ''
+        });
+      });
     }
     this.renderAdminTable(Utils.el('tchListTable'), this._teacherCache,
       [{ key: 'nama', label: 'Nama', editable: true },
        { key: 'unitDibimbing', label: 'Unit Dibimbing (Guru Penasihat)', editable: false },
+       this.categoryPlacementColumn('UNIT BERUNIFORM', 'unitBeruniformId', (row, unitId) => this.saveTeacherCategoryPlacement(row.teacherId, 'UNIT BERUNIFORM', unitId)),
+       this.categoryPlacementColumn('KELAB / PERSATUAN', 'kelabPersatuanId', (row, unitId) => this.saveTeacherCategoryPlacement(row.teacherId, 'KELAB / PERSATUAN', unitId)),
+       this.categoryPlacementColumn('SUKAN / PERMAINAN', 'sukanPermainanId', (row, unitId) => this.saveTeacherCategoryPlacement(row.teacherId, 'SUKAN / PERMAINAN', unitId)),
        { key: 'status', label: 'Status', editable: false }],
       'teacherId', 'Teachers', () => this.renderTeacherTable(true));
   },
@@ -778,28 +796,15 @@ const TabAdmin = {
 
     tableEl.querySelectorAll('tr[data-id]').forEach(tr => {
       tr.querySelectorAll('td[data-key] select.live-select').forEach(sel => {
-        const key = sel.closest('td').dataset.key;
-        const col = columnsByKey[key];
-        sel.addEventListener('change', async () => {
-          // Jika baris ini SEDANG dalam mod Edit (butang tunjuk "Simpan"),
-          // JANGAN proses serta-merta - tangguh sahaja (nilai kekal di
-          // dropdown ini) dan biar guru terus isi medan lain. Perubahan
-          // ini akan dihantar SEKALI sahaja apabila "Simpan" ditekan (lihat
-          // pendengar edit-btn di bawah).
+        sel.addEventListener('change', () => {
+          // JANGAN simpan serta-merta - tangguh sentiasa sehingga guru tekan
+          // butang "Simpan" baris ini (lihat pendengar edit-btn di bawah).
+          // Menukar dropdown terus tukar butang ke "Simpan" (jika belum)
+          // supaya guru nampak jelas ada perubahan belum disimpan - elak
+          // sistem "auto-save" bila guru sekadar menyemak/menyelak pilihan.
           const editBtn = tr.querySelector('.edit-btn');
-          if (editBtn && editBtn.textContent === 'Simpan') return;
-
-          const row = rows.find(r => String(r[idField]) === tr.dataset.id);
-          if (!col || !col.onLiveChange) return;
-          try {
-            Utils.showLoading('Mengemaskini...');
-            await col.onLiveChange(row, sel.value);
-            Utils.toast('Rekod berjaya dikemaskini.', 'success');
-            if (onChanged) onChanged();
-          } catch (err) {
-            Utils.toast(Utils.friendlyError(err), 'error');
-          } finally {
-            Utils.hideLoading();
+          if (editBtn && editBtn.textContent !== 'Simpan') {
+            editBtn.textContent = 'Simpan';
           }
         });
       });
@@ -828,16 +833,22 @@ const TabAdmin = {
           });
           editBtn.textContent = 'Simpan';
         } else {
+          // Guru mungkin tekan "Simpan" ini akibat menukar dropdown SAHAJA
+          // (tanpa pernah klik "Edit" untuk buka Nama/Kelas) - dalam kes
+          // itu sel data-editable="true" MASIH teks biasa (bukan input),
+          // jadi hanya kumpul fields daripada sel yang BENAR-BENAR sudah
+          // ditukar ke input/select.
           const fields = {};
           tr.querySelectorAll('td[data-editable="true"]').forEach(td => {
-            fields[td.dataset.key] = td.querySelector('input, select').value.trim();
+            const input = td.querySelector('input, select');
+            if (input) fields[td.dataset.key] = input.value.trim();
           });
 
           // Hantar SEKALI SAHAJA sebarang perubahan lajur "hidup" (cth Unit
-          // Beruniform/Kelab/Sukan) yang ditangguh semasa mod Edit (lihat
-          // pendengar select.live-select di atas), bersama simpanan
-          // Nama/Kelas - hanya untuk dropdown yang BENAR-BENAR berubah
-          // berbanding nilai asal.
+          // Beruniform/Kelab/Sukan) yang ditangguh sejak dropdown ditukar
+          // (lihat pendengar select.live-select di atas), bersama simpanan
+          // Nama/Kelas jika ada - hanya untuk dropdown yang BENAR-BENAR
+          // berubah berbanding nilai asal.
           const row = rows.find(r => String(r[idField]) === tr.dataset.id);
           const pendingLiveChanges = [];
           tr.querySelectorAll('td[data-key] select.live-select').forEach(sel => {
@@ -848,12 +859,19 @@ const TabAdmin = {
             }
           });
 
+          if (Object.keys(fields).length === 0 && pendingLiveChanges.length === 0) {
+            // Tiada apa-apa berubah - jangan panggil server, kembali ke mod biasa sahaja.
+            editBtn.textContent = 'Edit';
+            return;
+          }
+
           try {
             Utils.showLoading('Mengemaskini...');
-            await Promise.all([
-              Api.call('editRecord', { table: backendTable, idField, id: tr.dataset.id, fields }, true),
-              ...pendingLiveChanges
-            ]);
+            const apiCalls = [...pendingLiveChanges];
+            if (Object.keys(fields).length > 0) {
+              apiCalls.push(Api.call('editRecord', { table: backendTable, idField, id: tr.dataset.id, fields }, true));
+            }
+            await Promise.all(apiCalls);
             Utils.toast('Rekod berjaya dikemaskini.', 'success');
             if (onChanged) onChanged();
           } catch (err) {
