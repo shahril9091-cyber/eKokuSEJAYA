@@ -17,10 +17,11 @@ const Utils = {
   },
 
   formatTimeLive(date) {
-    return new Intl.DateTimeFormat(CONFIG.LOCALE, {
+    const formatted = new Intl.DateTimeFormat(CONFIG.LOCALE, {
       timeZone: CONFIG.TIMEZONE,
       hour: '2-digit', minute: '2-digit', hour12: true
     }).format(date);
+    return formatted.replace(/\bPG\b/i, 'PAGI').replace(/\bPTG\b/i, 'PETANG');
   },
 
   todayIso() {
