@@ -246,7 +246,7 @@ const TabAdmin = {
        this.categoryPlacementColumn('KELAB / PERSATUAN', 'kelabPersatuanId', (row, unitId) => this.saveStudentCategoryPlacement(row.studentId, 'KELAB / PERSATUAN', unitId)),
        this.categoryPlacementColumn('SUKAN / PERMAINAN', 'sukanPermainanId', (row, unitId) => this.saveStudentCategoryPlacement(row.studentId, 'SUKAN / PERMAINAN', unitId)),
        { key: 'status', label: 'Status', editable: false }],
-      'studentId', 'Students', () => this.renderStudentTable(true));
+      'studentId', 'Students', () => this.renderStudentTable(true), 'stuSimpanSemuaBtn');
   },
 
   // ---- Lajur dropdown "penempatan pantas" (Unit Beruniform/Kelab/Sukan) -
@@ -364,7 +364,7 @@ const TabAdmin = {
        this.categoryPlacementColumn('KELAB / PERSATUAN', 'kelabPersatuanId', (row, unitId) => this.saveTeacherCategoryPlacement(row.teacherId, 'KELAB / PERSATUAN', unitId)),
        this.categoryPlacementColumn('SUKAN / PERMAINAN', 'sukanPermainanId', (row, unitId) => this.saveTeacherCategoryPlacement(row.teacherId, 'SUKAN / PERMAINAN', unitId)),
        { key: 'status', label: 'Status', editable: false }],
-      'teacherId', 'Teachers', () => this.renderTeacherTable(true));
+      'teacherId', 'Teachers', () => this.renderTeacherTable(true), 'tchSimpanSemuaBtn');
   },
 
   // ==================== UNIT ====================
@@ -757,9 +757,16 @@ const TabAdmin = {
   },
 
   // ==================== GENERIC TABLE: EDIT / DELETE ====================
-  renderAdminTable(tableEl, rows, columns, idField, backendTable, onChanged) {
+  // simpanSemuaBtnId (pilihan): ID butang "Simpan Semua" di luar jadual ini -
+  // muncul bila SEBARANG baris ada perubahan belum disimpan (dropdown ditukar
+  // atau mod Edit dibuka), dan bila diklik, SEMUA baris tersebut (merentasi
+  // pelbagai murid/guru sekaligus) dihantar dalam SATU kumpulan panggilan API.
+  renderAdminTable(tableEl, rows, columns, idField, backendTable, onChanged, simpanSemuaBtnId) {
+    const simpanSemuaBtn = simpanSemuaBtnId ? Utils.el(simpanSemuaBtnId) : null;
+
     if (!rows || rows.length === 0) {
       tableEl.innerHTML = '<thead><tr><th>Tiada data</th></tr></thead>';
+      if (simpanSemuaBtn) simpanSemuaBtn.classList.add('hidden');
       return;
     }
 
@@ -794,18 +801,52 @@ const TabAdmin = {
     html += '</tbody>';
     tableEl.innerHTML = html;
 
+    // Baris "dirty" (perubahan belum disimpan) = butang Edit baris itu kini
+    // tunjuk "Simpan". Butang "Simpan Semua" hanya muncul bila SEKURANG-
+    // KURANGNYA satu baris berkeadaan begini.
+    const updateSimpanSemuaVisibility = () => {
+      if (!simpanSemuaBtn) return;
+      const hasDirty = Array.from(tableEl.querySelectorAll('tr[data-id] .edit-btn')).some(b => b.textContent === 'Simpan');
+      simpanSemuaBtn.classList.toggle('hidden', !hasDirty);
+    };
+
+    // Kumpul (TANPA hantar) sebarang perubahan pending bagi SATU baris -
+    // dikongsi oleh butang Simpan seorang baris DAN butang "Simpan Semua".
+    const buildRowSavePromises = (tr) => {
+      const fields = {};
+      tr.querySelectorAll('td[data-editable="true"]').forEach(td => {
+        const input = td.querySelector('input, select');
+        if (input) fields[td.dataset.key] = input.value.trim();
+      });
+
+      const row = rows.find(r => String(r[idField]) === tr.dataset.id);
+      const promises = [];
+      tr.querySelectorAll('td[data-key] select.live-select').forEach(sel => {
+        const key = sel.closest('td').dataset.key;
+        const col = columnsByKey[key];
+        if (col && col.onLiveChange && row && String(sel.value) !== String(row[key] || '')) {
+          promises.push(col.onLiveChange(row, sel.value));
+        }
+      });
+      if (Object.keys(fields).length > 0) {
+        promises.push(Api.call('editRecord', { table: backendTable, idField, id: tr.dataset.id, fields }, true));
+      }
+      return promises;
+    };
+
     tableEl.querySelectorAll('tr[data-id]').forEach(tr => {
       tr.querySelectorAll('td[data-key] select.live-select').forEach(sel => {
         sel.addEventListener('change', () => {
           // JANGAN simpan serta-merta - tangguh sentiasa sehingga guru tekan
-          // butang "Simpan" baris ini (lihat pendengar edit-btn di bawah).
-          // Menukar dropdown terus tukar butang ke "Simpan" (jika belum)
-          // supaya guru nampak jelas ada perubahan belum disimpan - elak
-          // sistem "auto-save" bila guru sekadar menyemak/menyelak pilihan.
+          // butang "Simpan" baris ini (atau "Simpan Semua"). Menukar dropdown
+          // terus tukar butang ke "Simpan" (jika belum) supaya guru nampak
+          // jelas ada perubahan belum disimpan - elak sistem "auto-save" bila
+          // guru sekadar menyemak/menyelak pilihan pada banyak dropdown.
           const editBtn = tr.querySelector('.edit-btn');
           if (editBtn && editBtn.textContent !== 'Simpan') {
             editBtn.textContent = 'Simpan';
           }
+          updateSimpanSemuaVisibility();
         });
       });
     });
@@ -832,46 +873,25 @@ const TabAdmin = {
             }
           });
           editBtn.textContent = 'Simpan';
+          updateSimpanSemuaVisibility();
         } else {
           // Guru mungkin tekan "Simpan" ini akibat menukar dropdown SAHAJA
           // (tanpa pernah klik "Edit" untuk buka Nama/Kelas) - dalam kes
           // itu sel data-editable="true" MASIH teks biasa (bukan input),
-          // jadi hanya kumpul fields daripada sel yang BENAR-BENAR sudah
-          // ditukar ke input/select.
-          const fields = {};
-          tr.querySelectorAll('td[data-editable="true"]').forEach(td => {
-            const input = td.querySelector('input, select');
-            if (input) fields[td.dataset.key] = input.value.trim();
-          });
+          // jadi buildRowSavePromises() hanya kumpul fields daripada sel
+          // yang BENAR-BENAR sudah ditukar ke input/select.
+          const promises = buildRowSavePromises(tr);
 
-          // Hantar SEKALI SAHAJA sebarang perubahan lajur "hidup" (cth Unit
-          // Beruniform/Kelab/Sukan) yang ditangguh sejak dropdown ditukar
-          // (lihat pendengar select.live-select di atas), bersama simpanan
-          // Nama/Kelas jika ada - hanya untuk dropdown yang BENAR-BENAR
-          // berubah berbanding nilai asal.
-          const row = rows.find(r => String(r[idField]) === tr.dataset.id);
-          const pendingLiveChanges = [];
-          tr.querySelectorAll('td[data-key] select.live-select').forEach(sel => {
-            const key = sel.closest('td').dataset.key;
-            const col = columnsByKey[key];
-            if (col && col.onLiveChange && row && String(sel.value) !== String(row[key] || '')) {
-              pendingLiveChanges.push(col.onLiveChange(row, sel.value));
-            }
-          });
-
-          if (Object.keys(fields).length === 0 && pendingLiveChanges.length === 0) {
+          if (promises.length === 0) {
             // Tiada apa-apa berubah - jangan panggil server, kembali ke mod biasa sahaja.
             editBtn.textContent = 'Edit';
+            updateSimpanSemuaVisibility();
             return;
           }
 
           try {
             Utils.showLoading('Mengemaskini...');
-            const apiCalls = [...pendingLiveChanges];
-            if (Object.keys(fields).length > 0) {
-              apiCalls.push(Api.call('editRecord', { table: backendTable, idField, id: tr.dataset.id, fields }, true));
-            }
-            await Promise.all(apiCalls);
+            await Promise.all(promises);
             Utils.toast('Rekod berjaya dikemaskini.', 'success');
             if (onChanged) onChanged();
           } catch (err) {
@@ -897,6 +917,39 @@ const TabAdmin = {
         }
       });
     });
+
+    // ---- Simpan Semua: hantar SEMUA baris "dirty" (merentasi banyak murid/
+    // guru sekaligus) dalam SATU kumpulan panggilan API, satu kali sahaja. ----
+    updateSimpanSemuaVisibility();
+    if (simpanSemuaBtn) {
+      simpanSemuaBtn.onclick = async () => {
+        const dirtyTrs = Array.from(tableEl.querySelectorAll('tr[data-id]')).filter(tr => {
+          const btn = tr.querySelector('.edit-btn');
+          return btn && btn.textContent === 'Simpan';
+        });
+        if (dirtyTrs.length === 0) return;
+
+        const allPromises = [];
+        dirtyTrs.forEach(tr => allPromises.push(...buildRowSavePromises(tr)));
+
+        if (allPromises.length === 0) {
+          dirtyTrs.forEach(tr => { tr.querySelector('.edit-btn').textContent = 'Edit'; });
+          updateSimpanSemuaVisibility();
+          return;
+        }
+
+        try {
+          Utils.showLoading(`Menyimpan ${dirtyTrs.length} rekod sekaligus...`);
+          await Promise.all(allPromises);
+          Utils.toast(`${dirtyTrs.length} rekod berjaya disimpan sekaligus.`, 'success');
+          if (onChanged) onChanged();
+        } catch (err) {
+          Utils.toast(Utils.friendlyError(err), 'error');
+        } finally {
+          Utils.hideLoading();
+        }
+      };
+    }
   },
 
   // ==================== ZON BAHAYA ====================
