@@ -5,10 +5,23 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
 <title>Sistem Pengurusan Kokurikulum - Sekolah Kebangsaan Seri Jaya</title>
 <link rel="stylesheet" href="css/style.css">
-<!-- Chart.js untuk graf bar & pai (Tab 4) -->
+<!-- Chart.js untuk graf bar & pai (Tab 4). CDN sandaran (jsDelivr) disemak &
+     dimuatkan segera (document.write, bukan async) jika CDN utama
+     (cdnjs.cloudflare.com) gagal/disekat rangkaian - elak carta senyap
+     kosong tanpa sebarang petunjuk bila satu CDN tidak boleh diakses. -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
-<!-- jsPDF untuk jana semua PDF di browser -->
+<script>
+  if (typeof Chart === 'undefined') {
+    document.write('<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.js"><\/script>');
+  }
+</script>
+<!-- jsPDF untuk jana semua PDF di browser (sama corak CDN sandaran) -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script>
+  if (typeof window.jspdf === 'undefined') {
+    document.write('<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"><\/script>');
+  }
+</script>
 </head>
 <body>
 
@@ -320,6 +333,7 @@
         <div class="chart-grid">
           <div class="chart-box">
             <h4>Kehadiran Mengikut Unit</h4>
+            <p class="hint-text hidden" id="anChartError">Graf tidak dapat dipaparkan (pustaka carta gagal dimuatkan). Sila muat semula halaman.</p>
             <canvas id="anBarChart"></canvas>
           </div>
         </div>

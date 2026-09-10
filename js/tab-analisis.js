@@ -74,11 +74,13 @@ const TabAnalisis = {
       requestAnimationFrame(() => {
         requestAnimationFrame(() => {
           try {
+            Utils.el('anChartError').classList.add('hidden');
+            Utils.el('anBarChart').classList.remove('hidden');
             this.renderBarChart(result.byUnit || []);
           } catch (chartErr) {
             console.error(chartErr);
-            const box = Utils.el('anBarChart').closest('.chart-box');
-            box.innerHTML = '<h4>Kehadiran Mengikut Unit</h4><p class="hint-text">Graf tidak dapat dipaparkan (pustaka carta gagal dimuatkan). Sila muat semula halaman.</p>';
+            Utils.el('anBarChart').classList.add('hidden');
+            Utils.el('anChartError').classList.remove('hidden');
           }
         });
       });
