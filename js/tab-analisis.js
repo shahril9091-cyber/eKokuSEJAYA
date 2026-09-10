@@ -69,11 +69,78 @@ const TabAnalisis = {
         this.renderBarChart(result.byUnit || []);
       });
 
+      this.renderErphTable(result.erphList || []);
+      this.renderLaporanTable(result.laporanList || []);
+
     } catch (err) {
       Utils.toast(Utils.friendlyError(err), 'error');
     } finally {
       Utils.hideLoading();
     }
+  },
+
+  // ---- Data eRPH merentasi setiap Unit Beruniform, Kelab & Sukan yang
+  // sepadan penapis (Kategori/Unit/Minggu) semasa di atas ----
+  renderErphTable(erphList) {
+    const table = Utils.el('anErphTable');
+    const emptyState = Utils.el('anErphEmptyState');
+
+    if (erphList.length === 0) {
+      table.innerHTML = '';
+      emptyState.classList.remove('hidden');
+      return;
+    }
+    emptyState.classList.add('hidden');
+
+    table.innerHTML = `
+      <thead><tr>
+        <th>Unit</th><th>Kategori</th><th>Minggu</th><th>Tarikh</th>
+        <th>Tajuk Aktiviti</th><th>Sivik</th><th>Bil. Murid</th>
+      </tr></thead>
+      <tbody>
+        ${erphList.map(e => `
+          <tr>
+            <td>${Utils.escapeHtml(e.unitNama)}</td>
+            <td>${Utils.escapeHtml(e.kategori)}</td>
+            <td>Minggu ${e.minggu}</td>
+            <td>${Utils.formatDateDisplay(e.tarikh)}</td>
+            <td>${Utils.escapeHtml(e.tajukAktiviti)}</td>
+            <td>${Utils.escapeHtml(e.sivik)}</td>
+            <td>${Utils.escapeHtml(String(e.bilanganMurid))}</td>
+          </tr>`).join('')}
+      </tbody>`;
+  },
+
+  // ---- Data Laporan Mingguan merentasi setiap Unit Beruniform, Kelab &
+  // Sukan yang sepadan penapis (Kategori/Unit/Minggu) semasa di atas ----
+  renderLaporanTable(laporanList) {
+    const table = Utils.el('anLaporanTable');
+    const emptyState = Utils.el('anLaporanEmptyState');
+
+    if (laporanList.length === 0) {
+      table.innerHTML = '';
+      emptyState.classList.remove('hidden');
+      return;
+    }
+    emptyState.classList.add('hidden');
+
+    table.innerHTML = `
+      <thead><tr>
+        <th>Unit</th><th>Kategori</th><th>Minggu</th><th>Tarikh Perjumpaan</th>
+        <th>Guru Pembimbing</th><th>PPikeBM</th><th>Disediakan Oleh</th>
+      </tr></thead>
+      <tbody>
+        ${laporanList.map(r => `
+          <tr>
+            <td>${Utils.escapeHtml(r.unitNama)}</td>
+            <td>${Utils.escapeHtml(r.kategori)}</td>
+            <td>Minggu ${r.minggu}</td>
+            <td>${Utils.formatDateDisplay(r.tarikh)}</td>
+            <td>${Utils.escapeHtml(r.guruPembimbing)}</td>
+            <td>${Utils.escapeHtml(r.ppikeBM)}</td>
+            <td>${Utils.escapeHtml(r.disediakanOleh)}</td>
+          </tr>`).join('')}
+      </tbody>`;
   },
 
   renderBarChart(byUnit) {
