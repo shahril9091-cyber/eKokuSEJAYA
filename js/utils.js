@@ -19,7 +19,7 @@ const Utils = {
   formatTimeLive(date) {
     return new Intl.DateTimeFormat(CONFIG.LOCALE, {
       timeZone: CONFIG.TIMEZONE,
-      hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true
+      hour: '2-digit', minute: '2-digit', hour12: true
     }).format(date);
   },
 
