@@ -67,6 +67,8 @@ const TabLaporan = {
     Utils.el('lpGuruPembimbingList').querySelectorAll('input[type="checkbox"]').forEach(cb => {
       cb.disabled = !editable;
     });
+    const tandaSemuaBtn = Utils.el('lpTandaSemuaGuruBtn');
+    if (tandaSemuaBtn) tandaSemuaBtn.disabled = !editable;
     for (let i = 1; i <= 4; i++) {
       Utils.el('lpGambar' + i).disabled = !editable;
       Utils.el('lpGambar' + i).closest('.image-upload-box').classList.toggle('locked', !editable);
@@ -89,7 +91,12 @@ const TabLaporan = {
       return;
     }
 
-    container.innerHTML = teachers.map(t => {
+    const toolbarHtml = `
+      <div class="student-list-toolbar">
+        <button type="button" class="btn btn-ghost btn-sm" id="lpTandaSemuaGuruBtn" ${this.isEditable ? '' : 'disabled'}>Tandakan Semua</button>
+      </div>`;
+
+    container.innerHTML = toolbarHtml + teachers.map(t => {
       const checked = selectedIds.includes(String(t.teacherId));
       return `
         <label class="student-row ${checked ? 'checked' : ''}" data-teacher-id="${t.teacherId}">
@@ -97,6 +104,18 @@ const TabLaporan = {
           <span class="student-name">${Utils.escapeHtml(t.nama)}</span>
         </label>`;
     }).join('');
+
+    const tandaSemuaBtn = container.querySelector('#lpTandaSemuaGuruBtn');
+    tandaSemuaBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      container.querySelectorAll('.student-row').forEach(row => {
+        const checkbox = row.querySelector('input[type="checkbox"]');
+        if (checkbox.disabled) return;
+        checkbox.checked = true;
+        row.classList.add('checked');
+      });
+      this.updateGuruPembimbingToggleLabel();
+    });
 
     container.querySelectorAll('.student-row').forEach(row => {
       const checkbox = row.querySelector('input[type="checkbox"]');
