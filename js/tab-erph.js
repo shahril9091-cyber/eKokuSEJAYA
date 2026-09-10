@@ -74,18 +74,23 @@ const TabErph = {
     if (previousValue) select.value = previousValue;
   },
 
+  // Muatkan status DAN data eRPH bagi SEMUA 12 minggu sekaligus (satu
+  // panggilan sahaja) - klik minggu selepas ini (showErphForm) terus baca
+  // daripada senarai yang sudah dimuatkan, tanpa round-trip server lagi.
   async loadWeekChips(unitId) {
     this.currentUnitId = unitId;
     try {
-      Utils.showLoading('Menyemak minggu berkaitan...');
-      const weeks = await Api.call('getWeeksWithSession', { unitId, academicYear: Shared.academicYear });
+      Utils.showLoading('Memuatkan data eRPH unit ini...');
+      const weeks = await Api.call('getErphWeeksData', { unitId, academicYear: Shared.academicYear });
+      this.weeksData = weeks;
+      this.weekChipsByMinggu = {};
       const container = Utils.el('erWeekChips');
       container.innerHTML = '';
 
       weeks.forEach(w => {
         const chip = document.createElement('button');
         chip.className = 'week-chip ' + (w.available ? 'available' : 'disabled');
-        chip.textContent = `MINGGU ${w.minggu}` + (w.erphFilled ? ' ✅' : '');
+        chip.textContent = `MINGGU ${w.minggu}` + (w.erph ? ' ✅' : '');
         chip.addEventListener('click', () => {
           if (!w.available) {
             Utils.el('erWeekHint').textContent = 'Tiada rekod kehadiran untuk minggu ini. Sila lengkapkan Rekod Kehadiran terlebih dahulu.';
@@ -94,9 +99,10 @@ const TabErph = {
           }
           container.querySelectorAll('.week-chip').forEach(c => c.classList.remove('selected'));
           chip.classList.add('selected');
-          this.loadErphForm(w.minggu, w.sessionId);
+          this.showErphForm(w);
         });
         container.appendChild(chip);
+        this.weekChipsByMinggu[w.minggu] = chip;
       });
 
       Utils.el('erWeekHint').textContent = weeks.some(w => w.available)
@@ -110,35 +116,39 @@ const TabErph = {
     }
   },
 
-  async loadErphForm(minggu, sessionId) {
-    this.currentMinggu = minggu;
-    this.currentSessionId = sessionId;
-    try {
-      Utils.showLoading('Memuatkan data eRPH...');
-      const data = await Api.call('getERPHEntryData', { sessionId });
+  // Papar borang eRPH bagi satu minggu - data sudah ada dalam this.weeksData
+  // (dimuatkan sekali oleh loadWeekChips), jadi tiada panggilan server di sini.
+  showErphForm(w) {
+    this.currentMinggu = w.minggu;
+    this.currentSessionId = w.sessionId;
 
-      Utils.el('erMingguDisplay').value = `Minggu ${minggu}`;
-      Utils.el('erBilanganMurid').value = data.bilanganMurid;
+    Utils.el('erMingguDisplay').value = `Minggu ${w.minggu}`;
+    Utils.el('erBilanganMurid').value = w.bilanganMurid;
 
-      const erph = data.erph || {};
-      Utils.el('erTarikh').value = Utils.toDateInputValue(erph.tarikh) || Utils.todayIso();
-      Utils.el('erTajuk').value = erph.tajukAktiviti || '';
-      Utils.el('erObjektif').value = erph.objektif || '';
-      Utils.el('erAktiviti').value = erph.aktiviti || '';
-      Utils.el('erRumusan').value = erph.rumusan || '';
-      Utils.el('erSivikSearch').value = '';
-      this.renderSivikOptions('');
-      if (erph.sivik) Utils.el('erSivik').value = erph.sivik;
+    const erph = w.erph || {};
+    Utils.el('erTarikh').value = Utils.toDateInputValue(erph.tarikh) || Utils.todayIso();
+    Utils.el('erTajuk').value = erph.tajukAktiviti || '';
+    Utils.el('erObjektif').value = erph.objektif || '';
+    Utils.el('erAktiviti').value = erph.aktiviti || '';
+    Utils.el('erRumusan').value = erph.rumusan || '';
+    Utils.el('erSivikSearch').value = '';
+    this.renderSivikOptions('');
+    if (erph.sivik) Utils.el('erSivik').value = erph.sivik;
 
-      Utils.el('erFormCard').classList.remove('hidden');
-      // Jika eRPH sudah wujud untuk minggu ini, buka dalam mod lihat (terkunci);
-      // jika belum, buka terus dalam mod isi.
-      this.setMode(!data.erph);
-    } catch (err) {
-      Utils.toast(Utils.friendlyError(err), 'error');
-    } finally {
-      Utils.hideLoading();
-    }
+    Utils.el('erFormCard').classList.remove('hidden');
+    // Jika eRPH sudah wujud untuk minggu ini, buka dalam mod lihat (terkunci);
+    // jika belum, buka terus dalam mod isi.
+    this.setMode(!w.erph);
+  },
+
+  // Segerakkan this.weeksData + tanda ✅ pada chip selepas simpan/padam,
+  // supaya guru boleh tukar minggu lain dalam unit yang sama tanpa perlu
+  // muat semula (loadWeekChips) untuk lihat status terkini.
+  updateLocalWeekData_(minggu, erph) {
+    const w = (this.weeksData || []).find(x => x.minggu === minggu);
+    if (w) w.erph = erph;
+    const chip = (this.weekChipsByMinggu || {})[minggu];
+    if (chip) chip.textContent = `MINGGU ${minggu}` + (erph ? ' ✅' : '');
   },
 
   async saveErph() {
@@ -166,6 +176,7 @@ const TabErph = {
       Utils.showLoading('Menyimpan eRPH...');
       await Api.call('saveERPH', payload);
       Utils.toast('eRPH berjaya disimpan.', 'success');
+      this.updateLocalWeekData_(this.currentMinggu, payload);
       this.setMode(false);
     } catch (err) {
       Utils.toast(Utils.friendlyError(err), 'error');
@@ -186,6 +197,7 @@ const TabErph = {
       Utils.showLoading('Memadam eRPH...');
       await Api.call('deleteERPH', { sessionId: this.currentSessionId });
       Utils.toast('eRPH berjaya dipadam.', 'success');
+      this.updateLocalWeekData_(this.currentMinggu, null);
 
       Utils.el('erTarikh').value = Utils.todayIso();
       Utils.el('erTajuk').value = '';
