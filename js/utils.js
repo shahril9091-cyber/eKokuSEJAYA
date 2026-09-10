@@ -113,16 +113,43 @@ const Utils = {
     }, duration);
   },
 
-  // ---- Loading overlay global ----
+  // ---- Loading overlay global (dengan peratusan animasi) ----
+  _loadingTimer: null,
+  _loadingPercent: 0,
+
   showLoading(message = 'Memuatkan...') {
     const overlay = document.getElementById('loadingOverlay');
     const text = document.getElementById('loadingText');
+    const fill = document.getElementById('loadingProgressFill');
+    const percentEl = document.getElementById('loadingPercent');
     if (text) text.textContent = message;
     if (overlay) overlay.classList.remove('hidden');
+
+    clearInterval(this._loadingTimer);
+    this._loadingPercent = 0;
+    if (fill) fill.style.width = '0%';
+    if (percentEl) percentEl.textContent = '0%';
+
+    // Peratusan SIMULASI, bukan progress sebenar - satu panggilan ke Apps
+    // Script pulangkan respons sekaligus (bukan stream), jadi tiada data
+    // kemajuan sebenar untuk dipaparkan. Naik pantas pada mulanya, perlahan
+    // menghampiri 90% supaya guru nampak pergerakan sepanjang tempoh tunggu
+    // tanpa "menipu" seolah-olah sudah siap sebelum data benar-benar sampai.
+    this._loadingTimer = setInterval(() => {
+      const baki = 90 - this._loadingPercent;
+      this._loadingPercent = Math.min(90, this._loadingPercent + Math.max(baki * 0.1, 0.5));
+      if (fill) fill.style.width = this._loadingPercent + '%';
+      if (percentEl) percentEl.textContent = Math.round(this._loadingPercent) + '%';
+    }, 150);
   },
 
   hideLoading() {
+    clearInterval(this._loadingTimer);
     const overlay = document.getElementById('loadingOverlay');
+    const fill = document.getElementById('loadingProgressFill');
+    const percentEl = document.getElementById('loadingPercent');
+    if (fill) fill.style.width = '100%';
+    if (percentEl) percentEl.textContent = '100%';
     if (overlay) overlay.classList.add('hidden');
   },
 

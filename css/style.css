@@ -522,6 +522,16 @@ select:disabled {
 
 #loadingText { color: var(--white); font-size: 14px; }
 
+.loading-progress-bar {
+  width: 220px; max-width: 70vw; height: 8px; border-radius: 999px;
+  background: rgba(255, 255, 255, 0.25); overflow: hidden;
+}
+.loading-progress-fill {
+  height: 100%; width: 0%; background: var(--blue-accent-light);
+  border-radius: 999px; transition: width 0.2s ease-out;
+}
+.loading-percent { color: var(--blue-accent-light); font-size: 18px; font-weight: 700; letter-spacing: 0.5px; }
+
 .modal-box {
   background: var(--bg-card); border: 1px solid var(--border-color);
   border-radius: var(--radius); padding: 20px; max-width: 360px; width: 100%;
