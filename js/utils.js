@@ -76,6 +76,22 @@ const Utils = {
     return `${map.hour}:${map.minute}`;
   },
 
+  // ---- Format masa "HH:MM" (24 jam) kepada paparan mesra guru (cth:
+  // "8:00 PAGI") - guna toTimeInputValue() dahulu untuk normalais input
+  // (boleh jadi rentetan "HH:MM" bersih ATAU ISO penuh akibat isu
+  // Google Sheets, lihat nota di toTimeInputValue di atas), supaya fungsi
+  // ini selamat dipanggil terus dengan nilai mentah daripada backend. ----
+  formatTimeDisplay(raw) {
+    const hhmm = this.toTimeInputValue(raw);
+    if (!hhmm) return '-';
+    const [h, m] = hhmm.split(':').map(Number);
+    if (isNaN(h) || isNaN(m)) return '-';
+    const period = h < 12 ? 'PAGI' : 'PETANG';
+    let h12 = h % 12;
+    if (h12 === 0) h12 = 12;
+    return `${h12}:${String(m).padStart(2, '0')} ${period}`;
+  },
+
   formatDateDisplay(isoDate) {
     if (!isoDate) return '-';
 

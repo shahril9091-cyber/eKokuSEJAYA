@@ -11,6 +11,8 @@ const TabLaporan = {
   currentSessionId: null,
   currentUnitId: null,
   currentMinggu: null,
+  currentMasaMula: null,  // Masa Mula sesi Kehadiran ini (auto-link, untuk PDF sahaja)
+  currentMasaTamat: null, // Masa Tamat sesi Kehadiran ini (auto-link, untuk PDF sahaja)
   newImages: [null, null, null, null],      // dataURL gambar baharu (jika guru upload/tukar)
   existingFileIds: [null, null, null, null], // fileId Drive sedia ada (jika laporan sudah wujud)
   isEditable: true, // false = mod lihat (selepas disimpan)
@@ -293,6 +295,10 @@ const TabLaporan = {
     try {
       Utils.showLoading('Memuatkan data laporan...');
       const data = await Api.call('getReportEntryData', { sessionId });
+      // Bukan medan borang (tiada input di Tab 3 untuk ini) - hanya disimpan
+      // untuk dipaparkan dalam PDF Laporan Mingguan (lihat generatePdf).
+      this.currentMasaMula = data.masaMula;
+      this.currentMasaTamat = data.masaTamat;
 
       Utils.el('lpMingguDisplay').value = `Minggu ${minggu}`;
       Utils.el('lpTajukDisplay').value = data.tajukAktiviti || '(Sila lengkapkan eRPH dahulu)';
@@ -447,6 +453,8 @@ const TabLaporan = {
 
       const rows = [
         ['Tarikh Perjumpaan', Utils.formatDateDisplay(Utils.el('lpTarikhPerjumpaan').value)],
+        ['Masa Mula', Utils.formatTimeDisplay(this.currentMasaMula)],
+        ['Masa Tamat', Utils.formatTimeDisplay(this.currentMasaTamat)],
         ['Guru Penasihat', teacherNames(this.getSelectedGuruPembimbingIds())],
         ['Tajuk Aktiviti', Utils.el('lpTajukDisplay').value],
         ['Aktiviti', Utils.el('lpAktivitiDisplay').value],

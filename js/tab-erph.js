@@ -140,6 +140,8 @@ const TabErph = {
 
     Utils.el('erMingguDisplay').value = `Minggu ${w.minggu}`;
     Utils.el('erBilanganMurid').value = w.bilanganMurid;
+    Utils.el('erMasaMula').value = Utils.toTimeInputValue(w.masaMula);
+    Utils.el('erMasaTamat').value = Utils.toTimeInputValue(w.masaTamat);
 
     const erph = w.erph || {};
     Utils.el('erTarikh').value = Utils.toDateInputValue(erph.tarikh) || Utils.todayIso();
@@ -241,6 +243,8 @@ const TabErph = {
 
       const rows = [
         ['Tarikh', Utils.formatDateDisplay(Utils.el('erTarikh').value)],
+        ['Masa Mula', Utils.formatTimeDisplay(Utils.el('erMasaMula').value)],
+        ['Masa Tamat', Utils.formatTimeDisplay(Utils.el('erMasaTamat').value)],
         ['Bilangan Murid', Utils.el('erBilanganMurid').value],
         ['Tajuk Aktiviti', Utils.el('erTajuk').value],
         ['Objektif', Utils.el('erObjektif').value],
