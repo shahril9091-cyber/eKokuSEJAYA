@@ -435,7 +435,12 @@ const TabLaporan = {
         const t = Shared.teachers.find(t => String(t.teacherId) === String(id));
         return t ? t.nama : '-';
       };
-      const teacherNames = (ids) => ids.length ? ids.map(teacherName).join(', ') : '-';
+      // Senarai bernombor (satu nama setiap baris) - bukan disambung dengan
+      // koma pada satu baris - guna "\n" antara nama supaya
+      // doc.splitTextToSize() kekalkan setiap nama pada baris berasingan.
+      const teacherNames = (ids) => ids.length
+        ? ids.map((id, idx) => `${idx + 1}. ${teacherName(id)}`).join('\n')
+        : '-';
 
       const doc = PdfHelper.newDoc();
       let y = await PdfHelper.drawHeader(doc, ['LAPORAN AKTIVITI MINGGUAN', `${unit ? unit.namaUnit : ''} - MINGGU ${this.currentMinggu}`]);
