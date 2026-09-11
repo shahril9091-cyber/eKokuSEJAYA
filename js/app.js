@@ -153,6 +153,21 @@ function setupTabNavigation() {
   });
 }
 
+// Paksa sistem KEMBALI ke tab Kehadiran (menu utama) pada setiap muat/muat
+// semula halaman - guru sepatutnya sentiasa mula dari Kehadiran, bukan
+// tersangkut pada tab terakhir yang dibuka sebelum refresh (cth: eRPH/
+// Laporan Mingguan). Dipanggil juga pada event "pageshow" dengan
+// event.persisted=true - ini kes bila pelayar (terutamanya mobile
+// Safari/Chrome) muat semula halaman daripada bfcache (in-memory snapshot
+// DOM sebelum refresh, termasuk kelas "active" yang sudah ditukar guru
+// secara klik) berbanding muat semula sepenuhnya - tanpa pengendalian ini,
+// bfcache boleh "kembalikan" tab yang guru sedang buka sebelum refresh
+// dan bukan reset ke Kehadiran seperti yang dijangka.
+function resetToDefaultTab() {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === 'kehadiran'));
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.toggle('active', p.id === 'tab-kehadiran'));
+}
+
 // ---- Header Info Statik (nama sekolah, dsb) ----
 function applyHeaderConfig() {
   Utils.el('schoolNameHeader').textContent = CONFIG.SCHOOL_NAME;
@@ -164,6 +179,7 @@ function applyHeaderConfig() {
 
 // ---- Inisialisasi Sistem ----
 async function initSystem() {
+  resetToDefaultTab();
   applyHeaderConfig();
   startLiveClock();
   setupTabNavigation();
@@ -194,3 +210,11 @@ async function initSystem() {
 }
 
 document.addEventListener('DOMContentLoaded', initSystem);
+
+// Muat semula (refresh) sepenuhnya sentiasa cetuskan DOMContentLoaded di
+// atas (yang sudah panggil resetToDefaultTab melalui initSystem). Tambahan
+// ini HANYA untuk kes bfcache (lihat nota resetToDefaultTab) - pelayar
+// memulihkan snapshot lama TANPA mencetuskan DOMContentLoaded semula.
+window.addEventListener('pageshow', (e) => {
+  if (e.persisted) resetToDefaultTab();
+});

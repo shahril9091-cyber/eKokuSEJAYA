@@ -93,15 +93,17 @@ const TabLaporan = {
     Utils.el('lpDeleteBtn').classList.toggle('hidden', editable);
   },
 
-  // ---- Guru Pembimbing: multiple choices (checkbox), bukan satu sahaja ----
-  // Senarai calon guru datang daripada Guru Penasihat unit ini (jatuh balik
-  // kepada semua guru jika belum didaftarkan) - lihat populateGuruPembimbingForUnit.
+  // ---- Guru Penasihat: multiple choices (checkbox), bukan satu sahaja ----
+  // Senarai calon guru TERHAD kepada Guru Penasihat unit INI sahaja (lihat
+  // populateGuruPembimbingForUnit) - tiada lagi jatuh balik kepada senarai
+  // SEMUA guru, kerana itu punca bug guru daripada unit lain (cth: semua
+  // guru sistem) turut terpapar untuk unit yang belum didaftarkan penasihat.
   renderGuruPembimbingCheckboxes(selectedIds) {
     const container = Utils.el('lpGuruPembimbingList');
     const teachers = this._guruPembimbingTeachers || [];
 
     if (teachers.length === 0) {
-      container.innerHTML = '<p class="hint-text">Tiada guru didaftarkan. Sila daftar guru di Tab Admin.</p>';
+      container.innerHTML = '<p class="hint-text">Tiada Guru Penasihat didaftarkan untuk unit ini. Sila daftarkan di Tab Admin &gt; Penempatan Guru ke Unit.</p>';
       this.updateGuruPembimbingToggleLabel();
       return;
     }
@@ -151,7 +153,7 @@ const TabLaporan = {
     const btn = Utils.el('lpGuruPembimbingToggle');
     const selectedIds = this.getSelectedGuruPembimbingIds();
     if (selectedIds.length === 0) {
-      btn.textContent = '-- Pilih Guru Pembimbing --';
+      btn.textContent = '-- Pilih Guru Penasihat --';
       return;
     }
     const teachers = this._guruPembimbingTeachers || [];
@@ -218,19 +220,19 @@ const TabLaporan = {
     }
   },
 
-  // Hadkan senarai checkbox "Guru Pembimbing" kepada guru yang didaftarkan
-  // sebagai Guru Penasihat unit ini (Tab Admin > Penempatan Guru). Jika
-  // belum ada sesiapa didaftarkan untuk unit ini, jatuh balik kepada SEMUA
-  // guru supaya Tab 3 tetap boleh digunakan tanpa perlu setup Penempatan
-  // Guru dahulu.
+  // Hadkan senarai checkbox "Guru Penasihat" kepada guru yang BENAR-BENAR
+  // didaftarkan sebagai Guru Penasihat unit INI sahaja (Tab Admin >
+  // Penempatan Guru ke Unit). SEBELUM ini, jika belum ada sesiapa
+  // didaftarkan untuk unit tertentu, sistem jatuh balik memaparkan SEMUA
+  // guru dalam sistem - ini punca bug guru unit LAIN turut kelihatan
+  // seolah-olah penasihat unit semasa. Sekarang: jika tiada guru
+  // didaftarkan untuk unit ini, senarai kekal KOSONG (lihat mesej dalam
+  // renderGuruPembimbingCheckboxes yang arahkan admin ke Tab Admin).
   async populateGuruPembimbingForUnit(unitId) {
     try {
-      const unitTeachers = await Api.call('getUnitTeacherMembers', { unitId, academicYear: Shared.academicYear });
-      this._guruPembimbingTeachers = unitTeachers.length > 0
-        ? unitTeachers
-        : Shared.teachers.filter(t => t.status !== 'Tidak Aktif');
+      this._guruPembimbingTeachers = await Api.call('getUnitTeacherMembers', { unitId, academicYear: Shared.academicYear });
     } catch (err) {
-      this._guruPembimbingTeachers = Shared.teachers.filter(t => t.status !== 'Tidak Aktif');
+      this._guruPembimbingTeachers = [];
     }
     this.renderGuruPembimbingCheckboxes([]);
   },
@@ -352,7 +354,7 @@ const TabLaporan = {
     const disediakanOleh = Utils.el('lpDisediakanOleh').value;
     const ppikeBM = Utils.el('lpPPikeBM').value;
 
-    if (guruPembimbingIds.length === 0) return Utils.toast('Sila tandakan sekurang-kurangnya seorang Guru Pembimbing.', 'error');
+    if (guruPembimbingIds.length === 0) return Utils.toast('Sila tandakan sekurang-kurangnya seorang Guru Penasihat.', 'error');
     if (!ppikeBM) return Utils.toast('Sila pilih PPikeBM.', 'error');
     if (!disediakanOleh) return Utils.toast('Sila pilih Disediakan Oleh.', 'error');
 
@@ -361,6 +363,13 @@ const TabLaporan = {
       if (this.existingFileIds[i]) return { status: 'keep', fileId: this.existingFileIds[i] };
       return { status: 'empty' };
     });
+
+    // Kesemua 4 gambar aktiviti WAJIB diisi sebelum laporan boleh disimpan
+    // (keputusan dasar: dokumentasi penuh setiap minggu, bukan sekadar pilihan).
+    const missingSlots = images.map((img, i) => img.status === 'empty' ? i + 1 : null).filter(n => n !== null);
+    if (missingSlots.length > 0) {
+      return Utils.toast(`Sila muat naik kesemua 4 gambar aktiviti (Gambar ${missingSlots.join(', ')} masih kosong).`, 'error', 5000);
+    }
 
     const payload = {
       sessionId: this.currentSessionId,
@@ -433,7 +442,7 @@ const TabLaporan = {
 
       const rows = [
         ['Tarikh Perjumpaan', Utils.formatDateDisplay(Utils.el('lpTarikhPerjumpaan').value)],
-        ['Guru Pembimbing', teacherNames(this.getSelectedGuruPembimbingIds())],
+        ['Guru Penasihat', teacherNames(this.getSelectedGuruPembimbingIds())],
         ['Tajuk Aktiviti', Utils.el('lpTajukDisplay').value],
         ['Aktiviti', Utils.el('lpAktivitiDisplay').value],
         ['PPikeBM', Utils.el('lpPPikeBM').value],

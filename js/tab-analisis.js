@@ -140,7 +140,7 @@ const TabAnalisis = {
     table.innerHTML = `
       <thead><tr>
         <th>Unit</th><th>Kategori</th><th>Minggu</th><th>Tarikh Perjumpaan</th>
-        <th>Guru Pembimbing</th><th>PPikeBM</th><th>Disediakan Oleh</th>
+        <th>Guru Penasihat</th><th>PPikeBM</th><th>Disediakan Oleh</th>
       </tr></thead>
       <tbody>
         ${laporanList.map(r => `
