@@ -243,6 +243,7 @@ const TabLaporan = {
       const weeks = await Api.call('getWeeksWithSession', { unitId, academicYear: Shared.academicYear });
       const container = Utils.el('lpWeekChips');
       container.innerHTML = '';
+      this.weekChipsByMinggu = {};
 
       weeks.forEach(w => {
         const chip = document.createElement('button');
@@ -260,6 +261,7 @@ const TabLaporan = {
           this.loadReportForm(w.minggu, w.sessionId);
         });
         container.appendChild(chip);
+        this.weekChipsByMinggu[w.minggu] = chip;
       });
 
       Utils.el('lpWeekHint').textContent = weeks.some(w => w.available)
@@ -271,6 +273,14 @@ const TabLaporan = {
     } finally {
       Utils.hideLoading();
     }
+  },
+
+  // Tandakan ✅ pada chip minggu serta-merta selepas simpan/padam laporan
+  // (macam TabErph.updateLocalWeekData_) - elak guru perlu tukar unit lain
+  // dan kembali semula hanya untuk nampak tanda ✅ dikemaskini.
+  updateLocalWeekData_(minggu, reportFilled) {
+    const chip = (this.weekChipsByMinggu || {})[minggu];
+    if (chip) chip.textContent = `MINGGU ${minggu}` + (reportFilled ? ' ✅' : '');
   },
 
   async loadReportForm(minggu, sessionId) {
@@ -369,6 +379,7 @@ const TabLaporan = {
       Utils.showLoading('Menyimpan laporan (memuat naik gambar)...');
       await Api.call('saveWeeklyReport', payload);
       Utils.toast('Laporan Mingguan berjaya disimpan.', 'success');
+      this.updateLocalWeekData_(this.currentMinggu, true);
       this.setMode(false);
     } catch (err) {
       Utils.toast(Utils.friendlyError(err), 'error');
@@ -389,6 +400,7 @@ const TabLaporan = {
       Utils.showLoading('Memadam laporan...');
       await Api.call('deleteWeeklyReport', { sessionId: this.currentSessionId });
       Utils.toast('Laporan Mingguan berjaya dipadam.', 'success');
+      this.updateLocalWeekData_(this.currentMinggu, false);
 
       Utils.el('lpTarikhPerjumpaan').value = Utils.todayIso();
       this.renderGuruPembimbingCheckboxes([]);
