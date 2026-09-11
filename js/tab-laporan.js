@@ -488,7 +488,20 @@ const TabLaporan = {
       doc.text('Gambar Aktiviti:', 14, y);
       y += labelHeight;
 
-      const positions = [[14, y], [102, y], [14, y + imgSize + rowGap], [102, y + imgSize + rowGap]];
+      // Tengahkan grid 2x2 gambar secara MENDATAR pada muka surat (bukan
+      // rapat ke tepi kiri seperti sebelum ini) - kira semula titik mula X
+      // berdasarkan lebar sebenar grid (2 lajur gambar + jurang) berbanding
+      // lebar kandungan (antara margin kiri/kanan 14mm). Label & maklumat
+      // lain di atas KEKAL tidak berubah (masih rapat kiri pada x=14).
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const leftMargin = 14;
+      const colGap = 6;
+      const contentWidth = pageWidth - (leftMargin * 2);
+      const gridWidth = (imgSize * 2) + colGap;
+      const col1X = leftMargin + Math.max(0, (contentWidth - gridWidth) / 2);
+      const col2X = col1X + imgSize + colGap;
+
+      const positions = [[col1X, y], [col2X, y], [col1X, y + imgSize + rowGap], [col2X, y + imgSize + rowGap]];
 
       // Sediakan data setiap gambar: guna dataURL baharu (jika baru diupload
       // sesi ini) atau ambil bait sebenar daripada Google Drive melalui
