@@ -230,6 +230,9 @@ input:disabled, textarea:disabled {
   color: var(--blue-accent);
   margin: 8px 0 0;
 }
+.attendance-count-summary div + div {
+  margin-top: 4px;
+}
 
 input:focus, textarea:focus {
   outline: none;

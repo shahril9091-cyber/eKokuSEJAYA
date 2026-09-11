@@ -178,6 +178,26 @@ const Utils = {
     });
   },
 
+  // ---- Modal makluman (Promise-based, satu butang "OK") - guna untuk
+  // makluman ringkas (cth: "Minggu ini belum diisi") berbanding confirmModal
+  // yang mempunyai dua butang (Sahkan/Batal) untuk tindakan yang perlu kelulusan. ----
+  alertModal(message, title = 'Makluman') {
+    return new Promise((resolve) => {
+      const modal = document.getElementById('alertModal');
+      document.getElementById('alertModalTitle').textContent = title;
+      document.getElementById('alertModalMessage').textContent = message;
+      modal.classList.remove('hidden');
+
+      const btnOk = document.getElementById('alertModalOk');
+      const onOk = () => {
+        modal.classList.add('hidden');
+        btnOk.removeEventListener('click', onOk);
+        resolve();
+      };
+      btnOk.addEventListener('click', onOk);
+    });
+  },
+
   // ---- Escape HTML supaya nama murid/guru selamat dipaparkan ----
   escapeHtml(str) {
     if (str === null || str === undefined) return '';

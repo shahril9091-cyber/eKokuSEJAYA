@@ -24,10 +24,25 @@ const TabErph = {
       Shared.populateUnitSelect(Utils.el('erUnit'), e.target.value);
       Utils.el('erFormCard').classList.add('hidden');
       Utils.el('erWeekChips').innerHTML = '';
+      Utils.el('erWeekHint').textContent = 'Sila pilih unit untuk melihat minggu yang tersedia.';
+      this.currentSessionId = null;
+      this.currentMinggu = null;
+      this.currentUnitId = null;
     });
     Shared.populateUnitSelect(Utils.el('erUnit'), Utils.el('erKategori').value);
 
     Utils.el('erUnit').addEventListener('change', (e) => {
+      // PENTING: sembunyikan borang & kosongkan chip minggu SERTA-MERTA
+      // (sebelum data unit baharu selesai dimuatkan) - jika tidak, borang
+      // unit LAMA (cth: Pengakap) kekal terpapar buat seketika di atas unit
+      // BAHARU (cth: Puteri Islam) yang dipilih, mengelirukan guru seolah-olah
+      // itu data unit baharu tersebut sedangkan minggu itu sebenarnya belum diisi.
+      Utils.el('erFormCard').classList.add('hidden');
+      Utils.el('erWeekChips').innerHTML = '';
+      Utils.el('erWeekHint').textContent = 'Sila pilih unit untuk melihat minggu yang tersedia.';
+      this.currentSessionId = null;
+      this.currentMinggu = null;
+      this.currentUnitId = e.target.value || null;
       if (e.target.value) this.loadWeekChips(e.target.value);
     });
 
@@ -95,6 +110,7 @@ const TabErph = {
           if (!w.available) {
             Utils.el('erWeekHint').textContent = 'Tiada rekod kehadiran untuk minggu ini. Sila lengkapkan Rekod Kehadiran terlebih dahulu.';
             Utils.el('erFormCard').classList.add('hidden');
+            Utils.alertModal(`Minggu ${w.minggu} belum diisi (tiada rekod Kehadiran). Sila lengkapkan Rekod Kehadiran untuk minggu ini terlebih dahulu.`, 'Minggu Belum Diisi');
             return;
           }
           container.querySelectorAll('.week-chip').forEach(c => c.classList.remove('selected'));

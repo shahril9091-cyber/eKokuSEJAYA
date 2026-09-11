@@ -280,24 +280,31 @@ const TabKehadiran = {
     }
   },
 
-  // Papar bilangan murid HADIR (bukan jumlah didaftarkan) mengikut tahun,
-  // cth "TAHUN 4 = 3 ORANG | TAHUN 5 = 5 ORANG | TAHUN 6 = 10 ORANG" - live,
-  // dikemaskini setiap kali guru tanda/nyahtanda kehadiran seorang murid,
-  // supaya guru boleh terus semak jumlah tanpa kira secara manual.
+  // Papar bilangan murid HADIR & TIDAK HADIR mengikut tahun, satu baris
+  // setiap tahun tersusun ke bawah (Tahun 4, kemudian Tahun 5, kemudian
+  // Tahun 6), cth:
+  //   Tahun 4 - 3 ✔️ / 2 ❌
+  //   Tahun 5 - 7 ✔️ / 3 ❌
+  //   Tahun 6 - 3 ✔️ / 4 ❌
+  // Live, dikemaskini setiap kali guru tanda/nyahtanda kehadiran seorang
+  // murid, supaya guru boleh terus semak jumlah tanpa kira secara manual.
   updateAttendanceCountSummary() {
     const el = Utils.el('khAttendanceCountSummary');
     if (this.allStudents.length === 0) {
       el.classList.add('hidden');
-      el.textContent = '';
+      el.innerHTML = '';
       return;
     }
-    const counts = { 4: 0, 5: 0, 6: 0 };
+    const counts = { 4: { hadir: 0, tidak: 0 }, 5: { hadir: 0, tidak: 0 }, 6: { hadir: 0, tidak: 0 } };
     this.allStudents.forEach(s => {
-      if (this.attendanceMap[s.studentId] && Object.prototype.hasOwnProperty.call(counts, Number(s.tahun))) {
-        counts[Number(s.tahun)]++;
-      }
+      const tahun = Number(s.tahun);
+      if (!Object.prototype.hasOwnProperty.call(counts, tahun)) return;
+      if (this.attendanceMap[s.studentId]) counts[tahun].hadir++;
+      else counts[tahun].tidak++;
     });
-    el.textContent = `TAHUN 4 = ${counts[4]} ORANG | TAHUN 5 = ${counts[5]} ORANG | TAHUN 6 = ${counts[6]} ORANG`;
+    el.innerHTML = [4, 5, 6].map(t =>
+      `<div>Tahun ${t} - ${counts[t].hadir} ✔️ / ${counts[t].tidak} ❌</div>`
+    ).join('');
     el.classList.remove('hidden');
   },
 
