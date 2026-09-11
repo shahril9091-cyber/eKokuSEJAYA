@@ -443,7 +443,7 @@ const TabLaporan = {
         : '-';
 
       const doc = PdfHelper.newDoc();
-      let y = await PdfHelper.drawHeader(doc, ['LAPORAN AKTIVITI MINGGUAN', `${unit ? unit.namaUnit : ''} - MINGGU ${this.currentMinggu}`]);
+      const yStart = await PdfHelper.drawHeader(doc, ['LAPORAN AKTIVITI MINGGUAN', `${unit ? unit.namaUnit : ''} - MINGGU ${this.currentMinggu}`]);
 
       const rows = [
         ['Tarikh Perjumpaan', Utils.formatDateDisplay(Utils.el('lpTarikhPerjumpaan').value)],
@@ -455,52 +455,80 @@ const TabLaporan = {
         ['Disediakan Oleh', teacherName(Utils.el('lpDisediakanOleh').value)]
       ];
 
-      doc.setFontSize(10);
-      rows.forEach(([label, value]) => {
-        y = PdfHelper.ensureSpace(doc, y, 14);
-        doc.setFont('helvetica', 'bold');
-        doc.text(label + ':', 14, y);
-        doc.setFont('helvetica', 'normal');
-        const lines = doc.splitTextToSize(String(value || '-'), 130);
-        doc.text(lines, 60, y);
-        y += Math.max(6, lines.length * 5) + 2;
-      });
-
-      // Gambar (2 x 2 grid). Daripada memaksa muka surat baharu bila ruang
-      // tidak cukup (yang boleh hasilkan PDF 2 muka surat), KECILKAN saiz
-      // gambar supaya sentiasa muat dalam ruang BAKI pada muka surat yang
-      // sama - PDF kekal 1 muka surat walaupun pengisian maklumat banyak.
-      // Had minimum 32mm supaya gambar tidak jadi terlalu kecil untuk
-      // dilihat; jika ruang benar-benar tidak cukup walaupun pada saiz
-      // minimum, barulah muka surat baharu digunakan sebagai jalan terakhir.
+      // PENTING: PDF Laporan Mingguan MESTI kekal 1 muka surat sahaja
+      // (keputusan tetap - tiada doc.addPage() dibenarkan lagi dalam fungsi
+      // ini). Sebelum ini, kandungan panjang (Aktiviti/Refleksi panjang,
+      // atau ramai Guru Penasihat kerana kini disenaraikan satu nama
+      // sebaris) boleh tolak grid gambar ke muka surat ke-2. Baiki: cuba
+      // beberapa saiz fon (besar -> kecil) untuk bahagian teks, kira tinggi
+      // SEBENAR diperlukan pada setiap saiz (fon lebih kecil = lebih
+      // sedikit baris terbalut oleh splitTextToSize), dan guna saiz fon
+      // PALING BESAR yang masih tinggalkan ruang munasabah untuk grid
+      // gambar 2x2. Jika kandungan amat panjang (jarang berlaku), fon &
+      // gambar mengecil ke had minimum - tetap 1 muka surat, tidak pernah 2.
+      const pageWidth = doc.internal.pageSize.getWidth();
       const pageHeight = doc.internal.pageSize.getHeight();
+      const leftMargin = 14;
+      const valueX = 60;
+      const valueWidth = pageWidth - valueX - leftMargin;
       const bottomMargin = 15;
       const labelHeight = 5;
       const rowGap = 5;
-      const availableHeight = pageHeight - bottomMargin - y - labelHeight - rowGap;
-      const idealImgSize = Math.floor(availableHeight / 2);
-      let imgSize = Math.max(32, Math.min(80, idealImgSize));
+      const colGap = 6;
+      const availableHeight = pageHeight - bottomMargin - yStart;
 
-      if (idealImgSize < 32) {
-        // Ruang benar-benar tidak cukup walaupun pada saiz minimum - jalan
-        // terakhir, mulakan muka surat baharu untuk gambar sahaja.
-        doc.addPage();
-        y = 20;
-        imgSize = 80;
+      const FONT_SIZE_STEPS = [10, 9, 8, 7, 6];
+      const MIN_IMG_SIZE = 18; // had minimum mutlak - gambar tetap dilukis (tidak digugurkan), sekadar kecil
+      const MAX_IMG_SIZE = 70;
+
+      const measureRows = (fontSize) => {
+        const lineHeight = fontSize * 0.5; // anggaran jarak baris selamat (mm) ikut saiz fon Helvetica
+        doc.setFontSize(fontSize);
+        let total = 0;
+        const measured = rows.map(([label, value]) => {
+          const lines = doc.splitTextToSize(String(value || '-'), valueWidth);
+          const rowHeight = Math.max(lineHeight + 1, lines.length * lineHeight) + 2;
+          total += rowHeight;
+          return { label, lines, rowHeight };
+        });
+        return { measured, total };
+      };
+
+      let chosenFontSize = FONT_SIZE_STEPS[0];
+      let chosenMeasure = null;
+      let chosenImgSize = MAX_IMG_SIZE;
+
+      for (const fontSize of FONT_SIZE_STEPS) {
+        const { measured, total } = measureRows(fontSize);
+        const idealImgSize = Math.floor((availableHeight - total - labelHeight - rowGap) / 2);
+        chosenFontSize = fontSize;
+        chosenMeasure = measured;
+        chosenImgSize = Math.max(MIN_IMG_SIZE, Math.min(MAX_IMG_SIZE, idealImgSize));
+        if (idealImgSize >= MIN_IMG_SIZE) break; // saiz fon ini beri ruang gambar yang munasabah - guna terus
+        // jika tidak, teruskan cuba fon lebih kecil; jika ini fon TERKECIL
+        // dalam senarai, chosenImgSize di atas kekal sebagai jalan selamat
+        // terakhir (mungkin di bawah paras selesa, tetapi tetap 1 muka surat).
       }
 
+      let y = yStart;
+      doc.setFontSize(chosenFontSize);
+      chosenMeasure.forEach(({ label, lines, rowHeight }) => {
+        doc.setFont('helvetica', 'bold');
+        doc.text(label + ':', leftMargin, y);
+        doc.setFont('helvetica', 'normal');
+        doc.text(lines, valueX, y);
+        y += rowHeight;
+      });
+
       doc.setFont('helvetica', 'bold');
-      doc.text('Gambar Aktiviti:', 14, y);
+      doc.text('Gambar Aktiviti:', leftMargin, y);
       y += labelHeight;
 
       // Tengahkan grid 2x2 gambar secara MENDATAR pada muka surat (bukan
       // rapat ke tepi kiri seperti sebelum ini) - kira semula titik mula X
       // berdasarkan lebar sebenar grid (2 lajur gambar + jurang) berbanding
-      // lebar kandungan (antara margin kiri/kanan 14mm). Label & maklumat
-      // lain di atas KEKAL tidak berubah (masih rapat kiri pada x=14).
-      const pageWidth = doc.internal.pageSize.getWidth();
-      const leftMargin = 14;
-      const colGap = 6;
+      // lebar kandungan (antara margin kiri/kanan 14mm).
+      const imgSize = chosenImgSize;
       const contentWidth = pageWidth - (leftMargin * 2);
       const gridWidth = (imgSize * 2) + colGap;
       const col1X = leftMargin + Math.max(0, (contentWidth - gridWidth) / 2);
